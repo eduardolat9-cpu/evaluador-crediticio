@@ -1,0 +1,2158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Evaluación de crédito empresarial: indicadores NIIF, flujo de caja, capacidad de pago, CAPM y WACC.">
+<style>body{margin:0;font-family:system-ui,sans-serif;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Evaluador Crediticio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: herramienta de analista — franja de veredicto arriba, luego 4 pasos en secuencia (documentos → datos → crédito y política → dictamen). */
+:root{
+  --bg:#F3F6F6; --surface:#FFFFFF; --surface-2:#EAF0F0; --line:#D5DFDF; --fg:#13211F; --muted:#586B68;
+  --accent:#0D6676; --accent-ink:#FFFFFF; --accent-soft:#D8ECEF;
+  --good:#1D7A4C; --good-soft:#DCF0E4; --warn:#9A6200; --warn-soft:#FAEDD2; --bad:#AE3826; --bad-soft:#F7E0DA;
+  --font-display:'Archivo', 'Segoe UI', system-ui, sans-serif;
+  --font-body:'Inter', 'Segoe UI', system-ui, sans-serif;
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0D1514; --surface:#141F1E; --surface-2:#1A2927; --line:#2A3C3A; --fg:#E3ECEA; --muted:#93A7A3;
+  --accent:#55B9C8; --accent-ink:#04201F; --accent-soft:#16363A;
+  --good:#62C990; --good-soft:#15301F; --warn:#E2AE4C; --warn-soft:#382A0F; --bad:#EE7C66; --bad-soft:#3B1C16; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0D1514; --surface:#141F1E; --surface-2:#1A2927; --line:#2A3C3A; --fg:#E3ECEA; --muted:#93A7A3;
+  --accent:#55B9C8; --accent-ink:#04201F; --accent-soft:#16363A;
+  --good:#62C990; --good-soft:#15301F; --warn:#E2AE4C; --warn-soft:#382A0F; --bad:#EE7C66; --bad-soft:#3B1C16; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h2{font-size:1.35rem;font-weight:700}
+h3{font-size:1.02rem;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.84rem}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button,.btn{font:inherit;font-size:.9rem;font-weight:600;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:8px 14px;cursor:pointer;line-height:1.2}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.ghost{background:transparent;border-color:transparent;color:var(--accent);padding:6px 8px}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input,select{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 9px;min-width:0}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent)}
+label.f{display:grid;gap:4px;font-size:.84rem;color:var(--muted);font-weight:500}
+label.f input,label.f select{color:var(--fg);font-size:.95rem}
+
+/* Header */
+.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;padding-block:16px}
+.brand{display:flex;gap:12px;align-items:center}
+.mark{width:38px;height:38px;border-radius:9px;background:var(--accent);display:grid;place-items:center;flex:none}
+.brand h1{font-size:1.3rem;font-weight:800}
+.empresa{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.empresa input{font-family:var(--font-display);font-weight:700;font-size:1.05rem;width:min(320px,70vw)}
+nav.steps{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+nav.steps .wrap{display:flex;gap:2px;overflow-x:auto;padding-block:6px;scrollbar-width:none}
+nav.steps .wrap::-webkit-scrollbar{display:none}
+nav.steps a{white-space:nowrap;text-decoration:none;color:var(--muted);font-weight:600;font-size:.88rem;padding:7px 12px;border-radius:7px}
+nav.steps a:hover{background:var(--surface-2);color:var(--fg)}
+nav.steps a b{font-family:var(--font-display);color:var(--accent);margin-right:6px}
+
+main.wrap{display:grid;gap:22px;padding-block:22px 60px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:grid;gap:16px;min-width:0}
+.card-head{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:end}
+.card-head .t{display:grid;gap:3px;max-width:70ch}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* Verdict */
+.verdict{display:grid;grid-template-columns:auto 1fr;gap:18px 26px;align-items:center;border-radius:var(--radius);padding:20px;border:1px solid var(--line);background:var(--surface)}
+.verdict[data-d="APROBAR"]{border-color:var(--good);background:linear-gradient(0deg,var(--surface),var(--surface)) padding-box}
+.verdict .dial{width:132px}
+.verdict .dec{display:grid;gap:8px;min-width:0}
+.decision{font-family:var(--font-display);font-size:1.75rem;font-weight:800;line-height:1.1}
+.d-APROBAR{color:var(--good)} .d-CONDICIONAL{color:var(--warn)} .d-RECHAZAR{color:var(--bad)} .d-REVISAR{color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;grid-column:1/-1}
+.kpi{background:var(--surface-2);border-radius:8px;padding:10px 12px;display:grid;gap:2px;min-width:0}
+.kpi .v{font-family:var(--font-display);font-weight:700;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:.76rem;color:var(--muted)}
+.reasons{display:grid;gap:4px;margin:0;padding-left:18px}
+.example-note{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--warn-soft);color:var(--fg);border-radius:8px;padding:10px 14px;font-size:.9rem}
+
+/* Docs */
+.drop{border:1.5px dashed var(--line);border-radius:var(--radius);padding:26px 16px;text-align:center;display:grid;gap:8px;justify-items:center;background:var(--surface-2);transition:border-color .15s}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.doclist{display:grid;gap:10px}
+.doc{border:1px solid var(--line);border-radius:9px;padding:12px 14px;display:grid;grid-template-columns:minmax(0,1.6fr) auto auto auto;gap:10px 14px;align-items:center}
+.doc .name{font-weight:600;overflow-wrap:anywhere}
+.doc .meta{font-size:.8rem;color:var(--muted)}
+.doc input[type=date]{width:150px}
+.doc input.meses{width:64px}
+.tag{display:inline-block;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.ok{background:var(--good-soft);color:var(--good)} .tag.warn{background:var(--warn-soft);color:var(--warn)} .tag.ai{background:var(--accent-soft);color:var(--accent)}
+
+/* Tables */
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:9px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--surface-2);white-space:nowrap}
+td.r,th.r{text-align:right}
+tr.grp td{background:var(--surface-2);font-family:var(--font-display);font-weight:700;font-size:.86rem}
+tr.tot td{font-weight:700}
+tr:last-child td{border-bottom:0}
+.vin{width:140px;text-align:right;font-variant-numeric:tabular-nums;padding:5px 7px}
+.vin.edited{border-color:var(--warn);background:var(--warn-soft)}
+.lbtn{background:none;border:0;padding:0;color:var(--fg);font-weight:500;text-align:left;cursor:pointer;font-size:.92rem}
+.lbtn:hover{color:var(--accent)}
+.lbtn .c{color:var(--muted);font-size:.75rem;margin-left:6px}
+tr.src td{background:var(--bg);font-size:.8rem;color:var(--muted)}
+tr.src ul{margin:0;padding-left:16px;columns:2;column-gap:28px}
+.chk-ok{color:var(--good)} .chk-bad{color:var(--bad)}
+
+/* Results */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.mid{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.info{background:var(--surface-2);color:var(--muted)}
+#results{display:grid;gap:20px;min-width:0}
+.cats{display:grid;gap:10px}
+.cat{display:grid;grid-template-columns:200px 1fr 54px;gap:12px;align-items:center}
+.bar{height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px}
+.ind td.cm{min-width:280px;max-width:520px;font-size:.86rem;line-height:1.45}
+.ind td.lab{min-width:170px;font-weight:500}
+.ind tr.catrow td{background:var(--surface-2);font-family:var(--font-display);font-weight:700}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.list{margin:0;padding-left:18px;display:grid;gap:6px}
+.alert{border-left:3px solid var(--warn);background:var(--warn-soft);padding:9px 12px;border-radius:0 7px 7px 0;font-size:.9rem}
+.alert.bad{border-color:var(--bad);background:var(--bad-soft)}
+.alert.info{border-color:var(--accent);background:var(--accent-soft)}
+.alerts{display:grid;gap:8px}
+.struct{display:grid;gap:12px}
+.sbar{display:grid;grid-template-columns:90px 1fr;gap:10px;align-items:center;font-size:.8rem}
+.sbar .stack{display:flex;height:20px;border-radius:5px;overflow:hidden;background:var(--surface-2)}
+.sbar .stack span{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.memo{background:var(--surface-2);border-radius:9px;padding:16px 18px;display:grid;gap:8px;line-height:1.6;max-width:85ch}
+.memo h4{font-family:var(--font-display);margin:8px 0 0;font-size:1rem}
+.memo ul{margin:0;padding-left:18px}
+.policy input{width:80px;text-align:right}
+.params{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.check{display:flex;gap:8px;align-items:center;font-size:.9rem}
+details>summary{cursor:pointer;font-weight:600;color:var(--accent)}
+.status{font-size:.85rem;color:var(--muted);min-height:1.2em}
+.wf{min-width:560px}
+a{color:var(--accent)}
+.owner{border:1px solid var(--line);border-radius:9px;padding:16px 18px;display:grid;gap:6px;background:var(--surface-2)}
+.owner p{max-width:80ch}
+.kpi .v strong{font-weight:800}
+.vlegend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.78rem;color:var(--muted)}
+.vlegend i{display:inline-block;width:14px;height:3px;margin-right:6px;vertical-align:3px;border-radius:2px}
+@media (max-width: 860px){
+  .doc{grid-template-columns:1fr 1fr}
+  .doc .acts{grid-column:1/-1}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .params{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cat{grid-template-columns:130px 1fr 44px}
+  tr.src ul{columns:1}
+}
+@media (max-width: 520px){
+  .verdict{grid-template-columns:1fr}
+  .verdict .dial{width:110px}
+  .doc{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="12" width="4" height="8" rx="1" fill="var(--accent-ink)"/><rect x="9" y="7" width="4" height="13" rx="1" fill="var(--accent-ink)"/><rect x="16" y="2" width="4" height="18" rx="1" fill="var(--accent-ink)"/></svg>
+      </div>
+      <div>
+        <h1>Evaluador Crediticio</h1>
+        <p class="small muted">Estados financieros NIIF · US$ · Ecuador</p>
+      </div>
+    </div>
+    <div class="empresa">
+      <label class="f" for="empresa">Empresa evaluada<input id="empresa" type="text" placeholder="Razón social"></label>
+      <label class="f" for="sector">Sector
+        <select id="sector">
+          <option value="construccion">Construcción e inmobiliaria</option>
+          <option value="comercio">Comercio</option>
+          <option value="industria">Manufactura</option>
+          <option value="servicios">Servicios</option>
+          <option value="general">General</option>
+        </select>
+      </label>
+    </div>
+  </div>
+</header>
+<nav class="steps" aria-label="Pasos">
+  <div class="wrap">
+    <a href="#resumen"><b>✓</b>Veredicto</a>
+    <a href="#docs"><b>1</b>Documentos</a>
+    <a href="#datos"><b>2</b>Datos estandarizados</a>
+    <a href="#credito"><b>3</b>Crédito y política</a>
+    <a href="#proyeccion"><b>4</b>Flujo proyectado</a>
+    <a href="#resultado"><b>5</b>Análisis y dictamen</a>
+    <a href="#valor"><b>6</b>Valor y WACC</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div id="exampleNote" class="example-note" hidden>
+    <strong>Datos de ejemplo.</strong> <span>Constructora ficticia con dos ejercicios. Carga los estados de la empresa para reemplazarlos.</span>
+  </div>
+
+  <section id="resumen" class="verdict" aria-live="polite"></section>
+
+  <!-- 1. Documentos -->
+  <section id="docs" class="card">
+    <div class="card-head">
+      <div class="t">
+        <span class="eyebrow">Paso 1</span>
+        <h2>Documentos</h2>
+        <p class="muted small">Carga 1 a 3 balances generales con su estado de resultados, en PDF o Excel. Los estados de la misma fecha se agrupan en un periodo. Con dos periodos o más se calcula el flujo de caja.</p>
+      </div>
+      <div class="row">
+        <button id="btnTemplate" type="button">Descargar plantilla Excel</button>
+        <button id="btnExample" type="button">Cargar ejemplo</button>
+        <button id="btnClear" type="button">Limpiar todo</button>
+      </div>
+    </div>
+    <label id="drop" class="drop" for="file">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16V4m0 0l-4 4m4-4l4 4M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <strong>Arrastra aquí los archivos o haz clic para elegirlos</strong>
+      <span class="small muted">PDF digital o escaneado, Excel (.xlsx, .xls) o CSV · balance y resultados pueden venir en archivos separados</span>
+      <input id="file" type="file" multiple accept=".pdf,.xlsx,.xls,.csv" hidden>
+    </label>
+    <div id="docStatus" class="status" role="status"></div>
+    <div id="docList" class="doclist"></div>
+    <p id="aiNote" class="small muted"></p>
+  </section>
+
+  <!-- 2. Datos -->
+  <section id="datos" class="card">
+    <div class="card-head">
+      <div class="t">
+        <span class="eyebrow">Paso 2</span>
+        <h2>Datos estandarizados</h2>
+        <p class="muted small">Cada cuenta se clasifica en un concepto estándar. Haz clic en un concepto para ver qué cuentas lo forman. Puedes corregir cualquier valor; las celdas editadas quedan resaltadas.</p>
+      </div>
+    </div>
+    <div id="dataTable"></div>
+  </section>
+
+  <!-- 3. Crédito y política -->
+  <section id="credito" class="card">
+    <div class="card-head">
+      <div class="t">
+        <span class="eyebrow">Paso 3</span>
+        <h2>Crédito solicitado y política</h2>
+        <p class="muted small">Condiciones del crédito que se evalúa y supuestos de la política de riesgo. Los cambios recalculan el dictamen al instante.</p>
+      </div>
+    </div>
+    <div class="params">
+      <label class="f" for="p_monto">Monto solicitado (US$)<input id="p_monto" type="text" inputmode="decimal"></label>
+      <label class="f" for="p_plazo">Plazo (meses)<input id="p_plazo" type="number" min="1" max="360"></label>
+      <label class="f" for="p_tasa">Tasa nominal anual (%)<input id="p_tasa" type="number" step="0.01" min="0"></label>
+      <label class="f" for="p_garantia">Valor de la garantía ofrecida (US$)<input id="p_garantia" type="text" inputmode="decimal"></label>
+      <label class="f" for="p_pctCP">Deuda bancaria de corto plazo que vence en 12 meses (%)<input id="p_pctCP" type="number" min="0" max="100"></label>
+      <label class="f" for="p_aniosLP">Años para amortizar la deuda de largo plazo<input id="p_aniosLP" type="number" min="1" max="30"></label>
+      <label class="f" for="p_dscrObj">DSCR mínimo exigido<input id="p_dscrObj" type="number" step="0.05" min="1"></label>
+      <label class="f" for="p_sistema">Sistema de amortización<select id="p_sistema"><option value="frances">Francés (cuota fija)</option><option value="aleman">Alemán (capital constante)</option><option value="bullet">Capital al vencimiento</option></select></label>
+      <label class="f" for="p_frecuencia">Frecuencia de pago<select id="p_frecuencia"><option value="1">Mensual</option><option value="3">Trimestral</option><option value="6">Semestral</option><option value="12">Anual</option></select></label>
+      <label class="f" for="p_gracia">Gracia de capital (meses)<input id="p_gracia" type="number" min="0" max="60"></label>
+      <div class="f" style="align-content:end;display:grid;gap:8px">
+        <label class="check" for="p_refinancia"><input id="p_refinancia" type="checkbox"> El crédito refinancia deuda de corto plazo</label>
+        <label class="check" for="p_estimarImp"><input id="p_estimarImp" type="checkbox"> Estimar 15% participación e IR si no están registrados</label>
+      </div>
+    </div>
+    <details>
+      <summary>Política de riesgo: umbrales y pesos por categoría</summary>
+      <div class="grid2" style="margin-top:14px">
+        <div class="tscroll"><table class="policy" id="policyT"></table></div>
+        <div style="display:grid;gap:10px;align-content:start">
+          <p class="small muted">Cada indicador recibe 100 puntos si alcanza el umbral <strong>sólido</strong>, 0 si llega al umbral <strong>débil</strong> y un valor proporcional entre ambos. El puntaje total pondera las categorías.</p>
+          <div class="tscroll"><table class="policy" id="weightsT"></table></div>
+          <p class="small muted">Decisión: 70 o más, aprobar; de 50 a 69, aprobar con condiciones; menos de 50, no aprobar. Patrimonio negativo, DSCR con el nuevo crédito menor a 1 o intereses no cubiertos rechazan el crédito aunque el puntaje sea alto.</p>
+          <button id="btnResetPolicy" type="button">Restablecer valores del sector</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- 4. Flujo proyectado -->
+  <section id="proyeccion" class="card">
+    <div class="card-head">
+      <div class="t">
+        <span class="eyebrow">Paso 4 · opcional</span>
+        <h2>Flujo de caja proyectado y pago propuesto</h2>
+        <p class="muted small">Sube el flujo proyectado que presenta la empresa (Excel, CSV o PDF) con columnas por mes, trimestre o año. Se compara con los pagos de la deuda actual y del crédito solicitado para ver si puede pagar, también con ingresos menores a los proyectados.</p>
+      </div>
+      <div class="row">
+        <button id="btnProjTemplate" type="button">Descargar plantilla de flujo</button>
+        <button id="btnProjRead" type="button" hidden>Leer con <span class="ainame">Claude</span></button>
+        <button id="btnProjAI" type="button" hidden>Clasificar con <span class="ainame">Claude</span></button>
+        <button id="btnProjClear" type="button">Quitar flujo</button>
+      </div>
+    </div>
+    <label id="pdrop" class="drop" for="pfile">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 17l5-5 4 3 8-8M20 7v5M20 7h-5" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <strong>Arrastra aquí el flujo proyectado o haz clic para elegirlo</strong>
+      <span class="small muted">Filas: cobros, pagos, deudas y el pago propuesto del crédito · Columnas: periodos ("Ene-2026", "Mes 1", "2026", "Año 1")</span>
+      <input id="pfile" type="file" accept=".xlsx,.xls,.csv,.pdf" hidden>
+    </label>
+    <div id="projStatus" class="status" role="status"></div>
+    <div class="params">
+      <label class="f" for="pp_len">Cada columna representa<select id="pp_len"><option value="0">Detectar automáticamente</option><option value="1">Un mes</option><option value="3">Un trimestre</option><option value="6">Un semestre</option><option value="12">Un año</option></select></label>
+      <label class="f" for="pp_des">Desembolso en la columna n.º<input id="pp_des" type="number" min="1"></label>
+      <label class="f" for="pp_fuente">Pago del crédito a evaluar<select id="pp_fuente"><option value="calc">Tabla calculada con el paso 3</option><option value="empresa">Pago propuesto por la empresa</option></select></label>
+      <label class="f" for="pp_estres">Prueba de estrés: caída de ingresos (%)<input id="pp_estres" type="number" min="0" max="90"></label>
+      <label class="f" for="pp_saldo">Saldo inicial de caja (US$)<input id="pp_saldo" type="text" inputmode="decimal" placeholder="Del archivo o del balance"></label>
+      <div class="f" style="grid-column:1/-1;display:grid;gap:8px">
+        <label class="check" for="pp_incl"><input id="pp_incl" type="checkbox"> El flujo ya incluye el desembolso del crédito solicitado</label>
+        <label class="check" for="pp_deuda"><input id="pp_deuda" type="checkbox"> Si el flujo no trae los pagos de la deuda actual, agregarlos desde el balance</label>
+      </div>
+    </div>
+    <details id="projRowsBox" hidden><summary>Clasificación de las filas del flujo</summary><div id="projRows" style="margin-top:12px"></div></details>
+    <div id="projOut" style="display:grid;gap:16px;min-width:0"></div>
+  </section>
+
+  <!-- 5. Resultado -->
+  <section id="resultado" class="card">
+    <div class="card-head">
+      <div class="t">
+        <span class="eyebrow">Paso 5</span>
+        <h2>Análisis y dictamen</h2>
+      </div>
+      <div class="row">
+        <button id="btnXlsx" type="button">Exportar Excel</button>
+        <button id="btnHtml" type="button">Exportar informe</button>
+      </div>
+    </div>
+    <div id="results"></div>
+    <div class="card" style="background:var(--bg)">
+      <div class="card-head">
+        <div class="t">
+          <h3>Dictamen redactado por <span class="ainame">Claude</span></h3>
+          <p class="small muted"><span class="ainame">Claude</span> redacta el informe para el comité de crédito a partir de los indicadores, el flujo de caja y las alertas calculadas aquí.</p>
+        </div>
+        <div class="row"><button id="btnMemo" type="button" class="primary">Redactar dictamen</button><button id="btnMemoStop" type="button" hidden>Detener</button></div>
+      </div>
+      <div id="memoStatus" class="status"></div>
+      <div id="memo" class="memo" hidden></div>
+    </div>
+    <p id="exportStatus" class="status"></p>
+  </section>
+
+  <!-- 6. Valor para los dueños -->
+  <section id="valor" class="card">
+    <div class="card-head">
+      <div class="t">
+        <span class="eyebrow">Paso 6 · para los dueños</span>
+        <h2>¿Conviene endeudarse? CAPM, WACC y creación de valor</h2>
+        <p class="muted small">Compara lo que rinde el negocio (ROIC) con lo que cuesta su capital (WACC), antes y después del crédito, para saber si la deuda crea o destruye valor para los socios. Los datos de mercado son referencias: actualícelos antes de presentar el análisis.</p>
+      </div>
+    </div>
+    <div class="params">
+      <label class="f" for="v_rf">Tasa libre de riesgo: bono EE.UU. 10 años (%)<input id="v_rf" type="number" step="0.01"></label>
+      <label class="f" for="v_erp">Prima de riesgo de mercado (%)<input id="v_erp" type="number" step="0.01"></label>
+      <label class="f" for="v_crp">Riesgo país Ecuador, EMBI (%)<input id="v_crp" type="number" step="0.01"></label>
+      <label class="f" for="v_size">Prima por tamaño, empresa no cotizada (%)<input id="v_size" type="number" step="0.1"></label>
+      <label class="f" for="v_bu">Beta desapalancada del sector<input id="v_bu" type="number" step="0.01"></label>
+      <label class="f" for="v_tax">Tasa fiscal efectiva (%)<input id="v_tax" type="number" step="0.01"></label>
+      <label class="f" for="v_kd">Costo actual de la deuda (%)<input id="v_kd" type="number" step="0.01" placeholder="Automático"></label>
+      <label class="f" for="v_rp">Rendimiento de la inversión financiada (% anual antes de impuestos)<input id="v_rp" type="number" step="0.1" placeholder="Igual al negocio actual"></label>
+    </div>
+    <p class="small muted">Fuentes para actualizar: <a href="https://home.treasury.gov/resource-center/data-chart-center/interest-rates" target="_blank" rel="noopener">tasas del Tesoro de EE.UU.</a> · <a href="https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/implpr.html" target="_blank" rel="noopener">prima de mercado (Damodaran)</a> · <a href="https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/Betas.html" target="_blank" rel="noopener">betas por sector (Damodaran)</a> · <a href="https://www.bce.fin.ec/" target="_blank" rel="noopener">riesgo país (Banco Central del Ecuador)</a>. La tasa fiscal de 36.25% combina el 15% de participación de trabajadores con el 25% de impuesto a la renta sobre el 85% restante. Se usan valores contables porque la empresa no cotiza en bolsa.</p>
+    <div id="valOut" style="display:grid;gap:16px;min-width:0"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+
+try{ if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } }catch(e){}
+
+/* ---------- Conceptos estándar ---------- */
+const FIELDS=[
+ {k:'efectivo',l:'Efectivo y equivalentes',g:'AC'},
+ {k:'inversiones_cp',l:'Inversiones temporales',g:'AC'},
+ {k:'cxc_clientes',l:'Cuentas por cobrar clientes',g:'AC'},
+ {k:'otras_cxc',l:'Otras cuentas por cobrar',g:'AC'},
+ {k:'inventarios',l:'Inventarios y obras en curso',g:'AC'},
+ {k:'impuestos_ac',l:'Activos por impuestos corrientes',g:'AC'},
+ {k:'otros_ac',l:'Anticipos y otros activos corrientes',g:'AC'},
+ {k:'ppe_neto',l:'Propiedad, planta y equipo (neto)',g:'ANC'},
+ {k:'otros_anc',l:'Otros activos no corrientes',g:'ANC'},
+ {k:'deuda_cp',l:'Obligaciones financieras corto plazo',g:'PC'},
+ {k:'proveedores',l:'Proveedores',g:'PC'},
+ {k:'laborales_fiscales',l:'Obligaciones laborales y fiscales',g:'PC'},
+ {k:'anticipos_clientes',l:'Anticipos de clientes',g:'PC'},
+ {k:'otros_pc',l:'Otras cuentas por pagar corto plazo',g:'PC'},
+ {k:'deuda_lp',l:'Obligaciones financieras largo plazo',g:'PNC'},
+ {k:'otros_pnc',l:'Otros pasivos no corrientes',g:'PNC'},
+ {k:'capital',l:'Capital y aportes',g:'PAT'},
+ {k:'reservas',l:'Reservas y otros resultados integrales',g:'PAT'},
+ {k:'resultados_acum',l:'Resultados acumulados',g:'PAT'},
+ {k:'resultado_ejercicio',l:'Resultado del ejercicio',g:'PAT'},
+ {k:'ventas',l:'Ingresos de actividades ordinarias',g:'ER'},
+ {k:'otros_ingresos',l:'Otros ingresos',g:'ER'},
+ {k:'costo_ventas',l:'Costo de ventas y de obra',g:'ER'},
+ {k:'gastos_op',l:'Gastos de administración y ventas',g:'ER'},
+ {k:'dep_amort',l:'Depreciaciones y amortizaciones',g:'ER'},
+ {k:'gastos_fin',l:'Gastos financieros',g:'ER'},
+ {k:'participacion',l:'15% participación trabajadores',g:'ER'},
+ {k:'impuesto_renta',l:'Impuesto a la renta',g:'ER'},
+];
+const FK=Object.fromEntries(FIELDS.map(f=>[f.k,f]));
+const GROUPS=[['AC','Activo corriente'],['ANC','Activo no corriente'],['PC','Pasivo corriente'],['PNC','Pasivo no corriente'],['PAT','Patrimonio'],['ER','Estado de resultados']];
+function sg(f){ if(f.g==='ER') return (f.k==='ventas'||f.k==='otros_ingresos')?'I':'X'; return ({AC:'A',ANC:'A',PC:'L',PNC:'L',PAT:'E'})[f.g]; }
+
+/* ---------- Reglas de clasificación (plan de cuentas NIIF / Supercias) ---------- */
+const AC_RULES=[
+ ['impuestos_ac',/CREDITO TRIBUTARIO|CREDITO FISCAL|(^| )IVA (CRED|PAGADO|EN COMPRAS|COMPRAS)|RETENCION(ES)? (EN LA FUENTE|DE IVA|IR|RENTA)|ANTICIPO (DE )?IMPUESTO|IMPUESTOS? (ANTICIPADO|POR RECUPERAR)|ACTIVOS? POR IMPUESTO|IMPUESTO A LA RENTA PAGADO/],
+ ['efectivo',/EFECTIVO|CAJA|BANCO|EQUIVALENTE/],
+ ['inversiones_cp',/INVERSION|POLIZA|DEPOSITO A PLAZO|CERTIFICADO DE DEPOSITO/],
+ ['cxc_clientes',/CLIENTE|INCOBRABLE|CUENTAS DUDOSA|DOCUMENTOS POR COBRAR|CUENTAS POR COBRAR COMERCIAL|DEUDORES COMERCIALES/],
+ ['otras_cxc',/POR COBRAR|PRESTAMOS? (A |DE )?(EMPLEADO|SOCIO|ACCIONISTA|TERCERO)|ANTICIPOS? (A |DE )?EMPLEADO|ACCIONISTA|RELACIONAD|DEUDORES/],
+ ['inventarios',/INVENTARIO|MERCADER|MATERIA PRIMA|PRODUCTO|SUMINISTRO|MATERIAL|OBRA|PROYECTO|EN CURSO|EN PROCESO|COSTO|IMPORTACIONES EN TRANSITO|TERRENOS? PARA LA VENTA/],
+ ['otros_ac',/ANTICIPO|PREPAGAD|POR ANTICIPADO|PAGOS ANTICIPADOS|GARANTIA/],
+];
+const NC_RULES=[
+ ['ppe_neto',/PROPIEDAD|PLANTA|EQUIPO|VEHICUL|MAQUINARIA|TERRENO|EDIFIC|MUEBLE|ENSERES|FIJO|DEPRECIACION|INSTALACION|HERRAMIENTA|CONSTRUCCIONES EN CURSO|INMUEBLE/],
+];
+const LIAB_RULES=[
+ ['laborales_fiscales',/SUELDO|NOMINA|SALARIO|BENEFICIO|DECIMO|VACACION|IESS|FONDO DE RESERVA|PARTICIPACION|IMPUESTO|(^| )SRI( |$)|RETENCION|(^| )IVA( |$)|LIQUIDACION|APORTE (PERSONAL|PATRONAL)|EMPLEADO|TRABAJADOR/],
+ ['anticipos_clientes',/ANTICIPOS? (DE |RECIBIDOS? (DE )?)?CLIENTE|ANTICIPOS RECIBIDOS/],
+ ['otros',/ACCIONISTA|SOCIO|RELACIONAD|DIVIDENDO|JUBILACION|DESAHUCIO/],
+ ['deuda',/INSTITUCIONES FINANCIERAS|BANCO|BANCARI|PRESTAMO|SOBREGIRO|TARJETA (CORPORATIVA|DE CREDITO)|OBLIGACIONES FINANCIERAS|MUTUALISTA|COOPERATIVA|EMISION DE OBLIGACIONES|PAPEL COMERCIAL|ARRENDAMIENTO FINANCIERO|LEASING|(^| )CFN( |$)|BIESS/],
+ ['proveedores',/PROVEEDOR|ACREEDORES COMERCIALES|CUENTAS POR PAGAR COMERCIAL|DOCUMENTOS POR PAGAR/],
+];
+const EQ_RULES=[
+ ['resultado_ejercicio',/DEL (PRESENTE )?EJERCICIO|DEL PERIODO|PERIODO EN CURSO|EJERCICIO ACTUAL|DEL ANO/],
+ ['resultados_acum',/ACUMULAD|EJERCICIOS ANTERIORES|ANOS ANTERIORES|ADOPCION|PRIMERA VEZ/],
+ ['reservas',/RESERVA|SUPERAVIT|REVALUACION|INTEGRAL/],
+ ['capital',/CAPITAL|APORTE|ACCIONES|PARTICIPACIONES/],
+];
+const INC_OTHER=/OTROS INGRESOS|FINANCIER|INTERES|RENDIMIENTO|NO OPERACIONAL|VENTA DE ACTIVO|DIVIDENDO/;
+const EXP_RULES=[
+ ['participacion',/PARTICIPACION (A |DE )?(LOS )?TRABAJADOR|15% /],
+ ['impuesto_renta',/IMPUESTO A LA RENTA|IMPUESTO RENTA|IMPUESTO DIFERIDO/],
+ ['dep_amort',/DEPRECIACION|AMORTIZACION|DETERIORO/],
+ ['gastos_fin',/INTERES|FINANCIER|COMISIONES BANCARIAS|GASTOS BANCARIOS/],
+ ['costo_ventas',/COSTO DE (VENTA|PRODUCCION|LO VENDIDO|OBRA)|COSTOS DE (VENTA|PRODUCCION)|MANO DE OBRA DIRECTA|MATERIA PRIMA/],
+];
+const INCOME_TOTAL=/^(INCOME|INGRESOS?|TOTAL INGRESOS?|INGRESOS (OPERACIONALES|ORDINARIOS|DE ACTIVIDADES ORDINARIAS|TOTALES)|VENTAS( NETAS)?|TOTAL VENTAS)$/;
+const REPORTED_UTIL=/^(UTILIDAD|PERDIDA|RESULTADO|GANANCIA)( NETA| O PERDIDA)?( DEL (EJERCICIO|PERIODO))?$|^NET INCOME$|UTILIDAD DEL EJERCICIO|PERDIDA DEL EJERCICIO|RESULTADO DEL EJERCICIO/;
+const CAPITALIZED=/ASESORIA|SEGURO|PUBLICIDAD|PROMOCION|GUARDIANIA|HONORARIO|SERVICIOS PROFESIONALES|APORTES? SOCIOS|ADMINISTRATIV|MANTENIMIENTO/;
+
+function firstMatch(chain,rules){ for(const n of chain){ for(const [c,re] of rules){ if(re.test(n)) return c; } } return null; }
+
+function classifyRows(rows){
+ const dotted=rows.some(r=>r.code&&r.code.includes('.'));
+ const sep=dotted?'.':'';
+ const split=k=>dotted?k.split('.'):k.split('');
+ rows.forEach(r=>{ r.key=r.code?String(r.code).replace(/\.+$/,''):''; });
+ const prefixes=new Set(), byKey=new Map();
+ for(const r of rows){ if(!r.key) continue; if(!byKey.has(r.key)) byKey.set(r.key,[]); byKey.get(r.key).push(norm(r.name));
+   const p=split(r.key); for(let i=1;i<p.length;i++) prefixes.add(p.slice(0,i).join(sep)); }
+ return rows.map(r=>{
+   if(!r.key||prefixes.has(r.key)) return null;
+   const p=split(r.key);
+   const chain=[norm(r.name)];
+   for(let i=p.length-1;i>=1;i--){ const ns=byKey.get(p.slice(0,i).join(sep)); if(ns) chain.push(ns.join(' / ')); }
+   const all=chain.join(' | ');
+   const sec=p[0][0];
+   const second=dotted?parseInt(p[1]||'0',10):parseInt(r.key.slice(1,3)||'0',10);
+   if(sec==='1'){
+     const nc=/NO CORRIENTE/.test(all)?true:/CORRIENTE/.test(all)?false:second===2;
+     if(nc) return firstMatch(chain,NC_RULES)||'otros_anc';
+     return firstMatch(chain,AC_RULES)||'otros_ac';
+   }
+   if(sec==='2'){
+     const nc=/NO CORRIENTE|LARGO PLAZO|L\/P/.test(all)?true:/CORRIENTE|CORTO PLAZO|C\/P/.test(all)?false:second===2;
+     const c=firstMatch(chain,LIAB_RULES);
+     if(c==='deuda') return nc?'deuda_lp':'deuda_cp';
+     if(!c||c==='otros') return nc?'otros_pnc':'otros_pc';
+     return nc?'otros_pnc':c;
+   }
+   if(sec==='3') return firstMatch(chain,EQ_RULES)||'reservas';
+   if(sec==='4') return chain.some(n=>INC_OTHER.test(n))?'otros_ingresos':'ventas';
+   if('56789'.includes(sec)){
+     const c=firstMatch(chain,EXP_RULES); if(c) return c;
+     if(sec==='5') return (/GASTO/.test(all)&&!/COSTO/.test(all))?'gastos_op':'costo_ventas';
+     return /COSTO/.test(all)?'costo_ventas':'gastos_op';
+   }
+   return null;
+ });
+}
+
+function aggregate(doc){
+ const fields={}, sources={}; FIELDS.forEach(f=>{fields[f.k]=0;sources[f.k]=[];});
+ if(doc.fields){
+   FIELDS.forEach(f=>{fields[f.k]=+doc.fields[f.k]||0;});
+   const hasBal=FIELDS.some(f=>f.g!=='ER'&&fields[f.k]); const hasPL=fields.ventas>0;
+   FIELDS.forEach(f=>{ if(fields[f.k]) sources[f.k]=[{code:'',name:'Valor de la plantilla',amount:fields[f.k]}]; });
+   return {fields,sources,hasBal,hasPL,reportedUtil:null,totals:null,capitalized:0,capItems:[],unmapped:0,leaves:0};
+ }
+ const rows=doc.rows||[];
+ const asg=doc.ai? rows.map((r,i)=>doc.ai[i]||null) : classifyRows(rows);
+ const raw={}; FIELDS.forEach(f=>raw[f.k]=0);
+ const idx={}; FIELDS.forEach(f=>idx[f.k]=[]);
+ let leaves=0;
+ rows.forEach((r,i)=>{ const c=asg[i]; if(!c||!(c in raw)) return; leaves++; raw[c]+=r.amount; idx[c].push(i); });
+ const sumG=g=>FIELDS.filter(f=>sg(f)===g).reduce((a,f)=>a+raw[f.k],0);
+ const A=sumG('A'),L=sumG('L'),E=sumG('E'),I=sumG('I'),X=sumG('X');
+ const flipLE=L<0||(L===0&&E<0), flipI=I<0, flipX=X<0;
+ const sign=f=>{const g=sg(f); return ((g==='L'||g==='E')&&flipLE)||(g==='I'&&flipI)||(g==='X'&&flipX)?-1:1;};
+ FIELDS.forEach(f=>{ const s=sign(f); fields[f.k]=raw[f.k]*s; sources[f.k]=idx[f.k].map(i=>({code:rows[i].code,name:rows[i].name,amount:rows[i].amount*s})); });
+ if(I===0){
+   const inc=rows.find(r=>!r.code&&INCOME_TOTAL.test(norm(r.name)));
+   if(inc){ fields.ventas=Math.abs(inc.amount); sources.ventas=[{code:'',name:inc.name+' (total del reporte, sin detalle)',amount:fields.ventas}]; }
+ }
+ let reportedUtil=null;
+ const ru=rows.find(r=>!r.code&&REPORTED_UTIL.test(norm(r.name)));
+ if(ru) reportedUtil=ru.amount;
+ const top=k=>{ const r=rows.find(r=>r.code&&String(r.code).replace(/\.+$/,'')===k); return r?Math.abs(r.amount):null; };
+ const totals={activo:top('1'),pasivo:top('2'),patrimonio:top('3')};
+ let capitalized=0; const capItems=[];
+ sources.inventarios.forEach(s=>{ if(CAPITALIZED.test(norm(s.name))){ capitalized+=s.amount; capItems.push(s.name); } });
+ const hasBal=Math.abs(A)+Math.abs(L)+Math.abs(E)>0;
+ const hasPL=fields.ventas>0||Math.abs(X)>0;
+ const unmapped=rows.filter(r=>r.code).length===0 && rows.length>0 ? rows.length : 0;
+ return {fields,sources,hasBal,hasPL,reportedUtil,totals,capitalized,capItems,unmapped,leaves};
+}
+
+/* ---------- Lectura de números y fechas ---------- */
+function parseNum(s){
+ if(typeof s==='number') return isFinite(s)?s:NaN;
+ s=String(s==null?'':s).trim(); if(!s) return NaN;
+ let neg=false;
+ if(/^\(.*\)$/.test(s)){neg=true;s=s.slice(1,-1).trim();}
+ s=s.replace(/[$\s]/g,'').replace(/^US\$?/i,'');
+ if(s.endsWith('-')){neg=!neg;s=s.slice(0,-1);}
+ if(s.startsWith('-')){neg=!neg;s=s.slice(1);}
+ if(!/^\d[\d.,]*$/.test(s)) return NaN;
+ const nd=(s.match(/\./g)||[]).length, nc=(s.match(/,/g)||[]).length;
+ if(nd&&nc){ if(s.lastIndexOf(',')>s.lastIndexOf('.')) s=s.replace(/\./g,'').replace(',','.'); else s=s.replace(/,/g,''); }
+ else if(nc){ if(nc===1&&!/,\d{3}$/.test(s)) s=s.replace(',','.'); else if(/^\d{1,3}(,\d{3})+$/.test(s)) s=s.replace(/,/g,''); else return NaN; }
+ else if(nd>1){ if(/^\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,''); else return NaN; }
+ const v=parseFloat(s); if(isNaN(v)) return NaN; return neg?-v:v;
+}
+const MONTHS={ENERO:1,FEBRERO:2,MARZO:3,ABRIL:4,MAYO:5,JUNIO:6,JULIO:7,AGOSTO:8,SEPTIEMBRE:9,SETIEMBRE:9,OCTUBRE:10,NOVIEMBRE:11,DICIEMBRE:12};
+const lastDay=(y,m)=>new Date(Date.UTC(y,m,0)).getUTCDate();
+const iso=(y,m,d)=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+function findDates(t){
+ const out=[]; let m;
+ const r1=/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/g; while((m=r1.exec(t))){ const d=+m[1],mo=+m[2],y=+m[3]; if(mo>=1&&mo<=12&&d>=1&&d<=31) out.push({iso:iso(y,mo,d),i:m.index}); }
+ const r2=/(\d{4})[\-\/](\d{1,2})[\-\/](\d{1,2})/g; while((m=r2.exec(t))){ const y=+m[1],mo=+m[2],d=+m[3]; if(mo>=1&&mo<=12&&d>=1&&d<=31) out.push({iso:iso(y,mo,d),i:m.index}); }
+ const r3=/(\d{1,2}) DE ([A-Z]+) (?:DE |DEL )?(\d{4})/g; while((m=r3.exec(t))){ const mo=MONTHS[m[2]]; if(mo) out.push({iso:iso(+m[3],mo,+m[1]),i:m.index}); }
+ return out.sort((a,b)=>a.i-b.i);
+}
+function toIsoDate(c){
+ if(c==null||c==='') return null;
+ if(c instanceof Date&&!isNaN(c)) return iso(c.getFullYear(),c.getMonth()+1,c.getDate());
+ if(typeof c==='number'){ if(c>=1990&&c<=2100) return iso(c,12,31); if(c>30000&&c<80000){ const d=new Date(Math.round((c-25569)*864e5)); return iso(d.getUTCFullYear(),d.getUTCMonth()+1,d.getUTCDate()); } return null; }
+ const t=norm(c); const ds=findDates(t); if(ds.length) return ds[0].iso;
+ const y=t.match(/^(?:AL |ANO |EJERCICIO )?((19|20)\d{2})$/); if(y) return iso(+y[1],12,31);
+ return null;
+}
+function detectMeta(lines,fileName){
+ let fecha=null,desde=null,empresa='';
+ const T=lines.map(norm);
+ for(const l of T){
+   if(/GENERADO|IMPRES|EMITIDO|FIRMADO|FECHA:/.test(l)) continue;
+   if(!fecha&&/(CORTE|HASTA|^AL | AL |A LA FECHA|TERMINAD|CIERRE|PERIODO)/.test(l)){ const ds=findDates(l); if(ds.length) fecha=ds[ds.length-1].iso; }
+   if(!desde&&/DESDE/.test(l)){ const ds=findDates(l); if(ds.length) desde=ds[0].iso; }
+ }
+ if(!fecha){
+   const n=norm(fileName);
+   for(const [mn,mi] of Object.entries(MONTHS)){ const mm=n.match(new RegExp(mn+'\\D{0,6}((19|20)\\d{2})')); if(mm){ fecha=iso(+mm[1],mi,lastDay(+mm[1],mi)); break; } }
+   if(!fecha){ const y=n.match(/(20\d{2})/); if(y) fecha=iso(+y[1],12,31); }
+ }
+ if(!fecha){ for(const l of T.slice(0,15)){ if(/GENERADO|IMPRES/.test(l)) continue; const ds=findDates(l); if(ds.length){fecha=ds[ds.length-1].iso;break;} } }
+ let meses=null;
+ if(fecha&&desde){ const [y1,m1]=desde.split('-').map(Number),[y2,m2]=fecha.split('-').map(Number); meses=(y2-y1)*12+(m2-m1)+1; if(meses<1||meses>24) meses=null; }
+ if(!meses&&fecha) meses=+fecha.split('-')[1];
+ for(const l of lines.slice(0,6)){ const n=norm(l); if(n.length>=3&&n.length<=80&&/[A-Z]{2}/.test(n)&&!/BALANCE|ESTADO|GANANCIAS|RESULTADO|REPORTE|NOMBRE|CODIGO|FECHA|PAGINA|MOVIMIENTOS|DESDE|HASTA|SALDO/.test(n)){ empresa=String(l).trim(); break; } }
+ return {fecha,meses,empresa};
+}
+
+/* ---------- PDF ---------- */
+const CODE_RE=/^((?:\d{1,4}\.)*\d{1,7}\.?)(?=\s|$)/;
+async function readPdf(file){
+ if(!window.pdfjsLib) throw new Error('No se pudo cargar el lector de PDF. Recarga la página.');
+ const buf=await file.arrayBuffer();
+ const pdf=await pdfjsLib.getDocument({data:new Uint8Array(buf.slice(0))}).promise;
+ const lines=[]; let chars=0;
+ for(let p=1;p<=pdf.numPages;p++){
+   const page=await pdf.getPage(p); const W=page.getViewport({scale:1}).width;
+   const tc=await page.getTextContent();
+   const items=tc.items.filter(it=>it.str&&it.str.trim()).map(it=>({s:it.str.trim(),x:it.transform[4],y:it.transform[5],w:it.width||0}));
+   chars+=items.reduce((a,b)=>a+b.s.length,0);
+   items.sort((a,b)=>b.y-a.y||a.x-b.x);
+   const rows=[];
+   for(const it of items){ let r=null; for(const q of rows){ if(Math.abs(q.y-it.y)<3){r=q;break;} } if(!r){r={y:it.y,items:[]};rows.push(r);} r.items.push(it); }
+   rows.sort((a,b)=>b.y-a.y);
+   for(const r of rows){ r.items.sort((a,b)=>a.x-b.x); lines.push({W,items:r.items,text:r.items.map(i=>i.s).join(' ')}); }
+ }
+ return {buf,pages:pdf.numPages,lines,chars};
+}
+function pdfLineToRow(line){
+ const amounts=[],txt=[];
+ for(const it of line.items){ const v=parseNum(it.s); if(!isNaN(v)&&it.x>line.W*0.45) amounts.push(v); else txt.push(it.s); }
+ if(!amounts.length) return null;
+ if(amounts.every(v=>Number.isInteger(v)&&v>=1990&&v<=2100)) return null;
+ let text=txt.join(' ').trim(), code='';
+ const m=text.match(CODE_RE); if(m){ code=m[1]; text=text.slice(m[0].length).trim(); }
+ if(!code&&!/[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(text)) return null;
+ return {code,name:text||code,vals:amounts};
+}
+function columnsFromRows(rows,headerYears){
+ const multi=rows.filter(r=>r.vals.length>=2).length;
+ if(rows.length&&multi/rows.length>=0.6){
+   const n=Math.max(...rows.map(r=>r.vals.length));
+   const cols=[]; for(let c=0;c<n;c++){ cols.push({fecha:headerYears&&headerYears[c]?headerYears[c]:null,rows:rows.map(r=>({code:r.code,name:r.name,amount:r.vals.length===n?r.vals[c]:(c>=n-r.vals.length?r.vals[c-(n-r.vals.length)]:0)}))}); }
+   return cols;
+ }
+ return [{fecha:null,rows:rows.map(r=>({code:r.code,name:r.name,amount:r.vals[r.vals.length-1]}))}];
+}
+async function ingestPdf(file){
+ const r=await readPdf(file);
+ const meta=detectMeta(r.lines.map(l=>l.text),file.name);
+ const base={file:file.name,source:'pdf',fileBuf:r.buf,pages:r.pages,empresa:meta.empresa};
+ if(r.chars<40*r.pages){
+   return [Object.assign(base,{id:++uid,label:file.name,fecha:meta.fecha,meses:meta.meses||12,rows:[],scanned:true})];
+ }
+ const rows=r.lines.map(pdfLineToRow).filter(Boolean);
+ let years=null;
+ for(const l of r.lines){ const ys=l.items.filter(i=>/^(19|20)\d{2}$/.test(i.s)&&i.x>l.W*0.45).map(i=>iso(+i.s,12,31)); if(ys.length>=2){years=ys;break;} }
+ const cols=columnsFromRows(rows,years);
+ return cols.map((c,ci)=>Object.assign({},base,{id:++uid,label:cols.length>1?`${file.name} · columna ${ci+1}`:file.name,fecha:c.fecha||meta.fecha,meses:meta.meses||12,rows:c.rows,scanned:false}));
+}
+
+/* ---------- Excel ---------- */
+async function ingestExcel(file){
+ if(!window.XLSX) throw new Error('No se pudo cargar el lector de Excel. Recarga la página.');
+ const buf=await file.arrayBuffer();
+ const wb=XLSX.read(buf,{type:'array',cellDates:true});
+ const out=[];
+ for(const sn of wb.SheetNames){
+   const aoa=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});
+   if(!aoa.length) continue;
+   const hi=aoa.findIndex((r,i)=>i<10&&r&&r.some(c=>norm(c)==='CLAVE'));
+   if(hi>=0){ out.push(...parseTemplate(aoa,hi,file.name)); continue; }
+   const lines=aoa.map(r=>(r||[]).filter(c=>c!=null&&c!=='').map(c=>c instanceof Date?toIsoDate(c):String(c)).join(' '));
+   const meta=detectMeta(lines,file.name+' '+sn);
+   const hdr={};
+   for(const r of aoa.slice(0,15)){ if(!r) continue; const ds=r.map((c,j)=>[j,toIsoDate(c)]).filter(x=>x[1]); if(ds.length>=1&&ds.length===r.filter(c=>c!=null&&c!=='').length-(r.some(c=>typeof c==='string'&&/[A-Za-z]/.test(c)&&!toIsoDate(c))?r.filter(c=>typeof c==='string'&&/[A-Za-z]/.test(c)&&!toIsoDate(c)).length:0)){ ds.forEach(([j,d])=>hdr[j]=d); if(ds.length) break; } }
+   const rows=[];
+   for(const r of aoa){
+     if(!r) continue;
+     let code='',name='',nameCol=-1; const vals=[];
+     for(let j=0;j<r.length;j++){
+       const c=r[j]; if(c==null||c==='') continue;
+       if(nameCol<0){
+         if(typeof c==='string'){
+           const s=c.trim(); const m=s.match(CODE_RE);
+           if(m&&!code&&m[0].length===s.length){ code=m[1]; continue; }
+           if(/[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(s)){ if(m&&!code){ code=m[1]; name=s.slice(m[0].length).trim(); } else name=s; nameCol=j; continue; }
+         } else if(typeof c==='number'&&!code&&Number.isInteger(c)&&c>0&&c<1e9&&j<2){ code=String(c); continue; }
+       } else {
+         const v=typeof c==='number'?c:parseNum(c);
+         if(!isNaN(v)) vals.push({j,v});
+       }
+     }
+     if(nameCol<0||!vals.length) continue;
+     rows.push({code,name,vals});
+   }
+   if(rows.length<4) continue;
+   const counts={}; rows.forEach(r=>r.vals.forEach(x=>counts[x.j]=(counts[x.j]||0)+1));
+   let cols=Object.keys(counts).map(Number).filter(j=>counts[j]>=rows.length*0.5).sort((a,b)=>a-b);
+   const dated=cols.filter(j=>hdr[j]);
+   if(dated.length>=2) cols=dated; else if(cols.length>1) cols=[cols[cols.length-1]];
+   if(!cols.length){ cols=[Math.max(...Object.keys(counts).map(Number))]; }
+   cols.forEach((j,ci)=>{
+     out.push({id:++uid,file:file.name,label:cols.length>1?`${file.name} · ${sn} · ${hdr[j]||'columna '+(ci+1)}`:`${file.name}${wb.SheetNames.length>1?' · '+sn:''}`,source:'excel',empresa:meta.empresa,
+       fecha:hdr[j]||meta.fecha,meses:meta.meses||12,scanned:false,
+       rows:rows.map(r=>{ const x=r.vals.find(v=>v.j===j); const fallback=cols.length===1&&!x?r.vals[r.vals.length-1]:null; return {code:r.code,name:r.name,amount:x?x.v:(fallback?fallback.v:0)}; })});
+   });
+ }
+ return out;
+}
+function parseTemplate(aoa,hi,fname){
+ const h=aoa[hi]; const kc=h.findIndex(c=>norm(c)==='CLAVE');
+ const dcols=[]; h.forEach((c,j)=>{ if(j>kc){ const d=toIsoDate(c); if(d) dcols.push([j,d]); } });
+ const docs=dcols.map(([j,d])=>({id:++uid,file:fname,label:`${fname} · ${d}`,source:'plantilla',fecha:d,meses:12,fields:{},empresa:''}));
+ for(const r of aoa.slice(hi+1)){
+   if(!r) continue; const key=String(r[kc]||'').trim();
+   dcols.forEach(([j],i)=>{ const v=r[j];
+     if(key==='empresa'&&v) docs[i].empresa=String(v);
+     else if(key==='meses'){ const n=parseNum(v); if(n>0) docs[i].meses=n; }
+     else if(FK[key]){ const n=typeof v==='number'?v:parseNum(v); docs[i].fields[key]=isNaN(n)?0:n; }
+   });
+ }
+ return docs.filter(d=>Object.values(d.fields).some(v=>v));
+}
+
+/* ---------- Estado ---------- */
+let uid=0;
+const DEF_PARAMS={monto:150000,plazo:36,tasa:11.5,garantia:0,pctCP:100,aniosLP:5,dscrObj:1.25,refinancia:false,estimarImp:true,sistema:'frances',frecuencia:1,gracia:0};
+const SIS={frances:'francés',aleman:'alemán',bullet:'capital al vencimiento'}, FREQ={1:'mensual',3:'trimestral',6:'semestral',12:'anual'};
+const BASE_T={dscr_proy:[1.3,1.0],margen_seg:[0.2,0.05],razon_corriente:[1.5,1.0],prueba_acida:[1.0,0.6],endeudamiento:[0.6,0.8],apalancamiento:[1.5,3.0],deuda_ebitda:[2.5,4.5],margen_ebitda:[0.15,0.05],margen_neto:[0.08,0.02],roe:[0.15,0.05],roa:[0.06,0.01],dias_cartera:[45,120],dias_inventario:[90,180],cobertura_int:[3,1.5],dscr:[1.5,1.0],dscr_pro:[1.3,1.0]};
+const SECTOR_T={
+ general:{},
+ construccion:{prueba_acida:[0.5,0.2],dias_inventario:[365,720],endeudamiento:[0.65,0.85],apalancamiento:[2.0,3.5],dias_cartera:[60,150]},
+ comercio:{margen_ebitda:[0.08,0.03],margen_neto:[0.04,0.01],dias_inventario:[60,150],prueba_acida:[0.8,0.4],roa:[0.05,0.01]},
+ industria:{dias_inventario:[90,200],margen_ebitda:[0.12,0.05]},
+ servicios:{dias_inventario:[null,null],prueba_acida:[1.0,0.7],margen_ebitda:[0.15,0.06]},
+};
+const DEF_W={liq:15,end:25,ren:15,act:10,pag:35};
+const CATS={liq:'Liquidez',end:'Endeudamiento',ren:'Rentabilidad',act:'Actividad',pag:'Capacidad de pago'};
+function sectorPolicy(s){ const t={}; for(const k in BASE_T) t[k]=(SECTOR_T[s]&&SECTOR_T[s][k])?SECTOR_T[s][k].slice():BASE_T[k].slice(); return {t,w:Object.assign({},DEF_W)}; }
+const DEF_PP={len:null,desembolso:1,fuente:'calc',estres:15,saldoIni:null,incluyeDesembolso:false,agregarDeuda:true};
+const DEF_VAL={rf:4.25,erp:4.5,crp:8.0,size:3.0,bu:null,tax:36.25,kd:null,rp:null};
+const BU={construccion:0.95,comercio:0.85,industria:0.9,servicios:0.85,general:0.9};
+const state={empresa:'',sector:'construccion',docs:[],overrides:{},params:Object.assign({},DEF_PARAMS),policy:sectorPolicy('construccion'),example:false,memo:'',proj:null,pp:Object.assign({},DEF_PP),val:Object.assign({},DEF_VAL)};
+try{ const s=localStorage.getItem('ec_params'); if(s){ const o=JSON.parse(s); Object.assign(state.params,o.params||{}); if(o.val) Object.assign(state.val,o.val); if(o.sector&&SECTOR_T[o.sector]){state.sector=o.sector;state.policy=sectorPolicy(o.sector);} if(o.policy&&o.policy.t) state.policy={t:Object.assign(sectorPolicy(state.sector).t,o.policy.t),w:Object.assign({},DEF_W,o.policy.w||{})}; } }catch(e){}
+function saveParams(){ try{ localStorage.setItem('ec_params',JSON.stringify({params:state.params,sector:state.sector,policy:state.policy,val:state.val})); }catch(e){} }
+
+/* ---------- Ejemplo ficticio ---------- */
+function loadExample(){
+ state.docs=[
+  {id:++uid,file:'Ejemplo',label:'Constructora Ejemplo S.A. · 2024',source:'ejemplo',fecha:'2024-12-31',meses:12,fields:{efectivo:120000,cxc_clientes:180000,otras_cxc:25000,inventarios:950000,impuestos_ac:40000,otros_ac:30000,ppe_neto:85000,otros_anc:10000,deuda_cp:300000,proveedores:210000,laborales_fiscales:35000,anticipos_clientes:120000,otros_pc:40000,deuda_lp:250000,otros_pnc:15000,capital:200000,reservas:20000,resultados_acum:140350,resultado_ejercicio:109650,ventas:1800000,otros_ingresos:10000,costo_ventas:1260000,gastos_op:300000,dep_amort:18000,gastos_fin:60000,participacion:25800,impuesto_renta:36550}},
+  {id:++uid,file:'Ejemplo',label:'Constructora Ejemplo S.A. · 2025',source:'ejemplo',fecha:'2025-12-31',meses:12,fields:{efectivo:95000,cxc_clientes:260000,otras_cxc:30000,inventarios:1150000,impuestos_ac:45000,otros_ac:25000,ppe_neto:120000,otros_anc:10000,deuda_cp:420000,proveedores:260000,laborales_fiscales:38000,anticipos_clientes:140000,otros_pc:45000,deuda_lp:280000,otros_pnc:18000,capital:200000,reservas:30000,resultados_acum:204868.75,resultado_ejercicio:99131.25,ventas:2050000,otros_ingresos:8000,costo_ventas:1455500,gastos_op:340000,dep_amort:22000,gastos_fin:85000,participacion:23325,impuesto_renta:33043.75}},
+ ];
+ state.empresa='Constructora Ejemplo S.A.'; state.overrides={}; state.example=true; state.memo='';
+ state.docs.forEach(d=>d.agg=aggregate(d));
+}
+
+/* ---------- Cálculos ---------- */
+const div=(a,b)=>b?a/b:null;
+function pmt(r,n,P){ if(n<=0||P<=0) return 0; return r>0?P*r/(1-Math.pow(1+r,-n)):P/n; }
+function pv(r,n,c){ if(n<=0||c<=0) return 0; return r>0?c*(1-Math.pow(1+r,-n))/r:c*n; }
+
+function buildPeriods(){
+ const map=new Map();
+ for(const doc of state.docs){
+   if(!doc.fecha||!doc.agg) continue;
+   if(!map.has(doc.fecha)) map.set(doc.fecha,{fecha:doc.fecha,meses:12,bal:null,pl:null,docs:[]});
+   const p=map.get(doc.fecha); p.docs.push(doc);
+   if(doc.agg.hasBal&&!p.bal) p.bal={doc,a:doc.agg};
+   if(doc.agg.hasPL&&!p.pl){ p.pl={doc,a:doc.agg}; p.meses=+doc.meses||12; }
+ }
+ let arr=[...map.values()].sort((x,y)=>x.fecha<y.fecha?-1:1);
+ const dropped=arr.length>3?arr.length-3:0; arr=arr.slice(-3);
+ arr.forEach(p=>{
+   p.auto={}; p.src={};
+   FIELDS.forEach(f=>{ const from=f.g==='ER'?p.pl:p.bal; p.auto[f.k]=from?(from.a.fields[f.k]||0):0; p.src[f.k]=from?(from.a.sources[f.k]||[]):[]; });
+   const ov=state.overrides[p.fecha]||{}; p.f={};
+   FIELDS.forEach(f=>{ p.f[f.k]=(f.k in ov)?ov[f.k]:p.auto[f.k]; });
+   p.hasBal=FIELDS.some(f=>f.g!=='ER'&&p.f[f.k]);
+   p.hasPL=p.f.ventas>0;
+   p.reportedUtil=p.pl?p.pl.a.reportedUtil:null;
+   p.totals=p.bal?p.bal.a.totals:null;
+   p.capitalized=p.bal?p.bal.a.capitalized:0;
+   p.capItems=p.bal?p.bal.a.capItems:[];
+ });
+ arr.dropped=dropped;
+ return arr;
+}
+function derive(p,P){
+ const f=p.f, k=12/(p.meses||12);
+ const d={f,k};
+ d.AC=f.efectivo+f.inversiones_cp+f.cxc_clientes+f.otras_cxc+f.inventarios+f.impuestos_ac+f.otros_ac;
+ d.ANC=f.ppe_neto+f.otros_anc; d.AT=d.AC+d.ANC;
+ d.PC=f.deuda_cp+f.proveedores+f.laborales_fiscales+f.anticipos_clientes+f.otros_pc;
+ d.PNC=f.deuda_lp+f.otros_pnc; d.PT=d.PC+d.PNC;
+ d.PAT=f.capital+f.reservas+f.resultados_acum+f.resultado_ejercicio;
+ d.descuadre=d.AT-(d.PT+d.PAT);
+ d.deudaFin=f.deuda_cp+f.deuda_lp;
+ d.UB=f.ventas-f.costo_ventas; d.EBITDA=d.UB-f.gastos_op; d.EBIT=d.EBITDA-f.dep_amort;
+ d.UAI=d.EBIT+f.otros_ingresos-f.gastos_fin;
+ let part=f.participacion, ir=f.impuesto_renta; d.impEst=false;
+ if(P.estimarImp&&part===0&&ir===0&&d.UAI>0&&f.ventas>0){ part=0.15*d.UAI; ir=0.25*(d.UAI-part); d.impEst=true; }
+ d.part=part; d.ir=ir;
+ d.UNreg=d.UAI-f.participacion-f.impuesto_renta;
+ d.UN=d.UAI-part-ir;
+ d.VENTAS_A=f.ventas*k; d.COSTO_A=f.costo_ventas*k; d.EBITDA_A=d.EBITDA*k; d.EBIT_A=d.EBIT*k; d.UN_A=d.UN*k; d.GF_A=f.gastos_fin*k; d.IMP_A=(part+ir)*k;
+ d.flujoDisp=d.EBITDA_A-d.IMP_A;
+ d.principal=f.deuda_cp*(P.pctCP/100)+(P.aniosLP>0?f.deuda_lp/P.aniosLP:0);
+ d.servicio=d.GF_A+d.principal;
+ d.dscr=f.ventas>0?(d.servicio>0?d.flujoDisp/d.servicio:(d.flujoDisp>0?Infinity:null)):null;
+ d.servicioRenov=d.GF_A+(P.aniosLP>0?f.deuda_lp/P.aniosLP:0);
+ d.dscrRenov=f.ventas>0?(d.servicioRenov>0?d.flujoDisp/d.servicioRenov:(d.flujoDisp>0?Infinity:null)):null;
+ return d;
+}
+function schedule(P,monto){
+ const M=monto==null?P.monto:monto; if(!(M>0)) return [];
+ const f=+P.frecuencia||1, N=Math.max(1,Math.round(P.plazo/f)), g=Math.min(N-1,Math.max(0,Math.round((+P.gracia||0)/f)));
+ const r=P.tasa/100*f/12, nAm=N-g, cf=pmt(r,nAm,M), ca=M/nAm; let bal=M; const out=[];
+ for(let k=1;k<=N;k++){ const it=bal*r; let cap=0; if(k>g) cap=P.sistema==='aleman'?ca:P.sistema==='bullet'?0:cf-it; if(k===N) cap=bal; cap=Math.max(0,Math.min(cap,bal)); bal-=cap; out.push({mo:k*f,int:it,cap}); }
+ return out;
+}
+const sum12=s=>s.filter(x=>x.mo<=12).reduce((a,x)=>a+x.int+x.cap,0);
+function proForma(d,P){
+ const sch=schedule(P);
+ const anual=sum12(sch), cuota=sch.length?sch[0].int+sch[0].cap:0;
+ const unit=sum12(schedule(P,1));
+ const relief=P.refinancia?Math.min(P.monto,d.f.deuda_cp)*(P.pctCP/100):0;
+ const serv=d.servicio-relief+anual;
+ const dscrPro=d.f.ventas>0?(serv>0?d.flujoDisp/serv:Infinity):null;
+ let M=0;
+ for(let i=0;i<30;i++){
+   const rel=P.refinancia?Math.min(M,d.f.deuda_cp)*(P.pctCP/100):0;
+   const cap=d.flujoDisp/P.dscrObj-(d.servicio-rel);
+   const next=cap>0&&unit>0?cap/unit:0;
+   if(Math.abs(next-M)<1){M=next;break;} M=next;
+ }
+ return {cuota,anual,relief,serv,dscrPro,montoMax:d.f.ventas>0?Math.max(0,M):null};
+}
+
+const IND=[
+ {k:'razon_corriente',cat:'liq',l:'Razón corriente',u:'x',hb:true,f:d=>div(d.AC,d.PC)},
+ {k:'prueba_acida',cat:'liq',l:'Prueba ácida',u:'x',hb:true,f:d=>div(d.AC-d.f.inventarios,d.PC)},
+ {k:'capital_trabajo',cat:'liq',l:'Capital de trabajo',u:'$',info:true,f:d=>d.AC-d.PC},
+ {k:'endeudamiento',cat:'end',l:'Endeudamiento (Pasivo / Activo)',u:'%',hb:false,f:d=>div(d.PT,d.AT)},
+ {k:'apalancamiento',cat:'end',l:'Apalancamiento (Pasivo / Patrimonio)',u:'x',hb:false,f:d=>d.PAT>0?d.PT/d.PAT:null},
+ {k:'deuda_ebitda',cat:'end',l:'Deuda financiera neta / EBITDA',u:'x',hb:false,pl:true,f:d=>d.f.ventas>0?(d.EBITDA_A>0?Math.max(0,d.deudaFin-d.f.efectivo)/d.EBITDA_A:(d.deudaFin>0?99:0)):null},
+ {k:'pc_pt',cat:'end',l:'Pasivo que vence en el corto plazo',u:'%',info:true,f:d=>div(d.PC,d.PT)},
+ {k:'margen_bruto',cat:'ren',l:'Margen bruto',u:'%',info:true,pl:true,f:d=>d.f.ventas>0?d.UB/d.f.ventas:null},
+ {k:'margen_ebitda',cat:'ren',l:'Margen EBITDA',u:'%',hb:true,pl:true,f:d=>d.f.ventas>0?d.EBITDA/d.f.ventas:null},
+ {k:'margen_neto',cat:'ren',l:'Margen neto',u:'%',hb:true,pl:true,f:d=>d.f.ventas>0?d.UN/d.f.ventas:null},
+ {k:'roe',cat:'ren',l:'ROE (Utilidad neta / Patrimonio)',u:'%',hb:true,pl:true,f:d=>d.f.ventas>0&&d.PAT>0?d.UN_A/d.PAT:null},
+ {k:'roa',cat:'ren',l:'ROA (Utilidad neta / Activo)',u:'%',hb:true,pl:true,f:d=>d.f.ventas>0?div(d.UN_A,d.AT):null},
+ {k:'dias_cartera',cat:'act',l:'Días de cartera',u:'d',hb:false,pl:true,f:d=>d.VENTAS_A>0?d.f.cxc_clientes/d.VENTAS_A*365:null},
+ {k:'dias_inventario',cat:'act',l:'Días de inventario',u:'d',hb:false,pl:true,f:d=>d.COSTO_A>0?d.f.inventarios/d.COSTO_A*365:null},
+ {k:'dias_proveedores',cat:'act',l:'Días de proveedores',u:'d',info:true,pl:true,f:d=>d.COSTO_A>0?d.f.proveedores/d.COSTO_A*365:null},
+ {k:'ciclo_caja',cat:'act',l:'Ciclo de conversión de efectivo',u:'d',info:true,pl:true,f:d=>(d.VENTAS_A>0&&d.COSTO_A>0)?(d.f.cxc_clientes/d.VENTAS_A+(d.f.inventarios-d.f.proveedores)/d.COSTO_A)*365:null},
+ {k:'cobertura_int',cat:'pag',l:'Cobertura de intereses (EBIT / Intereses)',u:'x',hb:true,pl:true,f:d=>d.f.ventas>0?(d.f.gastos_fin>0?d.EBIT/d.f.gastos_fin:Infinity):null},
+ {k:'dscr',cat:'pag',l:'DSCR: flujo / servicio de la deuda actual',u:'x',hb:true,pl:true,f:d=>d.dscr},
+ {k:'dscr_pro',cat:'pag',l:'DSCR con el crédito solicitado',u:'x',hb:true,pl:true,latest:true,f:d=>d.pro?d.pro.dscrPro:null},
+ {k:'dscr_proy',cat:'pag',l:'DSCR mínimo del flujo proyectado',u:'x',hb:true,latest:true,f:d=>d.projR?d.projR.dscrMin:null},
+ {k:'margen_seg',cat:'pag',l:'Caída de ingresos que soporta la proyección',u:'%',hb:true,latest:true,f:d=>d.projR?d.projR.margenSeg:null},
+];
+
+const money0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
+const money2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fm=v=>v==null||isNaN(v)?'—':(v<0?'-':'')+'$'+money0.format(Math.abs(v));
+function fmt(u,v){
+ if(v==null||(typeof v==='number'&&isNaN(v))) return '—';
+ if(v===Infinity) return 'Sin deuda';
+ if(u==='x') return (v>=99?'>99':v.toFixed(2))+'x';
+ if(u==='%') return (v*100).toFixed(1)+'%';
+ if(u==='d') return Math.round(v)+' días';
+ if(u==='$') return fm(v);
+ return String(v);
+}
+function levelOf(v,t,hb){
+ if(v==null||isNaN(v)||!t||t[0]==null) return null;
+ if(v===Infinity) return hb?'good':'bad';
+ const [g,b]=t;
+ if(hb){ if(v>=g) return 'good'; if(v<=b) return 'bad'; return 'mid'; }
+ if(v<=g) return 'good'; if(v>=b) return 'bad'; return 'mid';
+}
+function scoreOf(v,t,hb){
+ if(v==null||isNaN(v)||!t||t[0]==null) return null;
+ if(v===Infinity) return hb?100:0;
+ const [g,b]=t; const s=hb?(v-b)/(g-b):(b-v)/(b-g);
+ return Math.round(Math.max(0,Math.min(1,s))*100);
+}
+const LVTXT={good:'Sólido',mid:'Aceptable',bad:'Débil'};
+const fecL=s=>{ if(!s) return '—'; const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; };
+
+function trendTxt(ind,v,prev,prevF){
+ if(prev==null||v==null||v===Infinity||prev===Infinity||isNaN(prev)) return '';
+ const delta=v-prev; const rel=Math.abs(prev)>1e-9?Math.abs(delta/prev):1;
+ if(rel<0.03) return ` Se mantiene estable frente a ${fecL(prevF)} (${fmt(ind.u,prev)}).`;
+ if(ind.info) return ` ${delta>0?'Sube':'Baja'} desde ${fmt(ind.u,prev)} al ${fecL(prevF)}.`;
+ const better=ind.hb?delta>0:delta<0;
+ return ` ${better?'Mejora':'Se deteriora'} frente a ${fecL(prevF)} (${fmt(ind.u,prev)}).`;
+}
+function commentFor(ind,v,lv,d,P,sector){
+ if(v==null) return ind.pl?'Requiere el estado de resultados del periodo.':'Sin datos suficientes.';
+ const c=sector==='construccion';
+ const L=(g,m,b)=>lv==='good'?g:lv==='mid'?m:lv==='bad'?b:'';
+ switch(ind.k){
+ case 'razon_corriente': return `Por cada US$1 de deuda de corto plazo la empresa tiene US$${v.toFixed(2)} en activos corrientes. `+L('Cubre con holgura sus obligaciones de corto plazo.','La cobertura es ajustada y depende de convertir inventario y cartera en efectivo a tiempo.','Los activos corrientes no alcanzan para cubrir las deudas de corto plazo: riesgo de iliquidez.');
+ case 'prueba_acida': return `Sin contar inventarios, el activo corriente cubre ${v.toFixed(2)} veces el pasivo corriente. `+L('La liquidez inmediata es sólida.','Parte de los pagos depende de la venta de inventario.','Los pagos de corto plazo dependen de vender inventario u obras.')+(c?' En construcción el indicador suele ser bajo porque el activo principal son las obras; compénselo con el flujo de ventas y preventas.':'');
+ case 'capital_trabajo': return v>=0?`El activo corriente supera al pasivo corriente en ${fm(v)}${d.f.ventas>0?` (${(v/d.VENTAS_A*100).toFixed(0)}% de las ventas anuales)`:''}.`:`Capital de trabajo negativo de ${fm(v)}: parte de la operación o de los activos fijos se financia con deuda de corto plazo.`;
+ case 'endeudamiento': return `El ${(v*100).toFixed(1)}% de los activos está financiado por terceros. `+L('Estructura de financiamiento conservadora.','Endeudamiento moderado-alto; queda poco margen para nueva deuda.','Endeudamiento elevado; los acreedores financian casi todo el activo.');
+ case 'apalancamiento': return `Por cada US$1 de patrimonio hay US$${v.toFixed(2)} de pasivos. `+L('Los socios mantienen un compromiso patrimonial suficiente.','Apalancamiento alto; conviene exigir garantías o un aporte de capital.','Apalancamiento excesivo; el patrimonio es pequeño frente a la deuda.');
+ case 'deuda_ebitda': return d.EBITDA_A<=0?'El EBITDA es nulo o negativo: la deuda no se puede pagar con la operación.':`Con el EBITDA anual (${fm(d.EBITDA_A)}) la deuda financiera neta (${fm(Math.max(0,d.deudaFin-d.f.efectivo))}) se pagaría en ${v.toFixed(1)} años. `+L('Nivel de deuda manejable.','Deuda exigente; poca holgura ante una caída de ventas.','Deuda excesiva frente a la generación operativa.');
+ case 'pc_pt': return `El ${(v*100).toFixed(0)}% del pasivo vence en los próximos 12 meses.`+(v>0.8&&d.f.deuda_cp>0?' La presión de vencimientos es alta; evalúe trasladar deuda bancaria al largo plazo.':'');
+ case 'margen_bruto': return `Después del costo de ventas queda el ${(v*100).toFixed(1)}% de cada dólar vendido.`+(d.f.costo_ventas<0.45*d.f.ventas&&d.f.gastos_op>0.25*d.f.ventas?' El costo parece bajo frente a los gastos: es posible que parte del costo de obra esté registrado como gasto, lo que infla este margen.':'');
+ case 'margen_ebitda': return `La operación genera ${(v*100).toFixed(1)}% de EBITDA sobre ventas (${fm(d.EBITDA)} en el periodo). `+L('Rentabilidad operativa sólida.','Rentabilidad operativa moderada.','Rentabilidad operativa insuficiente para sostener deuda.');
+ case 'margen_neto': return `La utilidad neta${d.impEst?' (con participación e impuesto a la renta estimados)':''} equivale al ${(v*100).toFixed(1)}% de las ventas. `+L('Buena rentabilidad final.','Rentabilidad final moderada.','La rentabilidad final es baja o negativa.');
+ case 'roe': return `Los socios obtienen ${(v*100).toFixed(1)}% de retorno sobre su patrimonio${d.k!==1?' (anualizado)':''}. `+L('Retorno atractivo.','Retorno moderado.','Retorno bajo para el capital invertido.');
+ case 'roa': return `Los activos rinden ${(v*100).toFixed(1)}% de utilidad neta${d.k!==1?' (anualizado)':''}. `+L('Uso eficiente de los activos.','Rendimiento de activos moderado.','Los activos generan poca utilidad.');
+ case 'dias_cartera': return `La empresa cobra a sus clientes en ${Math.round(v)} días en promedio. `+L('Cobranza ágil.','Plazo de cobro amplio; revise la antigüedad de la cartera.','Cobranza lenta; riesgo de cartera vencida o incobrable.');
+ case 'dias_inventario': return `El inventario${c?' (incluye obras y proyectos en curso)':''} equivale a ${Math.round(v)} días de costo de ventas. `+L('Rotación adecuada.','Rotación lenta; inmoviliza capital de trabajo.','Inventario muy alto frente a las ventas; existe riesgo de obras o productos sin vender.')+(d.f.costo_ventas<0.45*d.f.ventas?' Si parte del costo está registrado como gasto, este indicador aparece inflado.':'');
+ case 'dias_proveedores': return `Paga a sus proveedores en ${Math.round(v)} días en promedio.`+(v>120?' Un plazo tan largo puede indicar atrasos en pagos.':'');
+ case 'ciclo_caja': return `Transcurren ${Math.round(v)} días entre el pago a proveedores y el cobro a clientes; ese tiempo debe financiarse con capital propio o deuda.`;
+ case 'cobertura_int': return v===Infinity?'La empresa no registra gastos financieros.':`El resultado operativo cubre ${v.toFixed(2)} veces los gastos financieros. `+L('Cobertura holgada.','Cobertura justa; un alza de tasas o caída de ventas la comprometería.','El resultado operativo apenas cubre, o no cubre, los intereses.');
+ case 'dscr': return v===Infinity?'Sin deuda que atender en los próximos 12 meses.':`El flujo disponible (EBITDA menos impuestos: ${fm(d.flujoDisp)}) cubre ${v.toFixed(2)} veces el servicio de deuda de los próximos 12 meses (${fm(d.servicio)}: intereses ${fm(d.GF_A)} + capital ${fm(d.principal)}). `+L('Capacidad de pago holgada.','Capacidad de pago justa.','El flujo no alcanza para pagar intereses y amortizaciones de la deuda actual.')+(P.pctCP>0&&d.f.deuda_cp>0&&d.dscrRenov!=null?` Si los bancos renuevan la deuda de corto plazo, el DSCR sería ${fmt('x',d.dscrRenov)}.`:'');
+ case 'dscr_proy': return d.projR&&d.projR.yMin?`Según el flujo que presenta la empresa, en el año más ajustado (${yearLabel(d.projR,d.projR.yMin)}) el flujo operativo cubre ${fmt('x',v)} los pagos de deuda, incluido el crédito solicitado. `+L('Puede pagar según su propia proyección.','Puede pagar, pero con poca holgura.','Su propia proyección no alcanza para pagar.'):'';
+ case 'margen_seg': return v<0?'Incluso con los ingresos proyectados, algún año no cubre la deuda.':`Los ingresos proyectados pueden caer hasta ${(v*100).toFixed(1)}% antes de que el flujo deje de cubrir la deuda. `+L('Margen de seguridad amplio.','Margen de seguridad reducido.','Cualquier desviación pequeña deja la deuda sin cobertura.');
+ case 'dscr_pro': return d.pro?`Con la cuota del crédito solicitado (${fm(d.pro.anual)} en los primeros 12 meses${P.refinancia?`, menos ${fm(d.pro.relief)} de deuda refinanciada`:''}), la cobertura es ${fmt('x',v)}. `+L('El crédito es pagable con el flujo actual.','Pagable con poca holgura; condicione el crédito.','El flujo no alcanza para atender el nuevo crédito.'):'';
+ }
+ return '';
+}
+
+function compute(){
+ const P=state.params, pol=state.policy;
+ const periods=buildPeriods();
+ periods.forEach(p=>{p.d=derive(p,P);});
+ const withBal=periods.filter(p=>p.hasBal);
+ const L=withBal[withBal.length-1]||null;
+ if(L) L.d.pro=proForma(L.d,P);
+ let PR=null; try{ PR=(state.proj&&state.proj.rows&&state.proj.rows.length)?computeProj(state.proj,P,ppEff(),L):null; }catch(e){ console.error(e); }
+ if(L) L.d.projR=PR;
+ // indicadores
+ const vals={};
+ IND.forEach(ind=>{ vals[ind.k]=periods.map(p=>{ if(!p.hasBal) return null; if(ind.latest&&p!==L) return null; if(ind.pl&&!p.hasPL) return null; try{ const v=ind.f(p.d); return v; }catch(e){ return null; } }); });
+ // flujos de caja
+ const flows=[];
+ for(let i=1;i<periods.length;i++){
+   const a=periods[i-1], b=periods[i]; if(!a.hasBal||!b.hasBal||!b.hasPL) continue;
+   const A=a.f,B=b.f,dB=b.d,dA=a.d; const D=k=>B[k]-A[k];
+   const UN=dB.UNreg;
+   const wc=-(D('cxc_clientes')+D('otras_cxc')+D('inventarios')+D('impuestos_ac')+D('otros_ac'))+(D('proveedores')+D('laborales_fiscales')+D('anticipos_clientes')+D('otros_pc')+D('otros_pnc'));
+   const fco=UN+B.dep_amort+wc;
+   const capex=-(D('ppe_neto')+B.dep_amort);
+   const fci=capex-D('otros_anc')-D('inversiones_cp');
+   const dPat=dB.PAT-dA.PAT;
+   const otrosPat=dPat-D('capital')-UN;
+   const fcf=D('deuda_cp')+D('deuda_lp')+D('capital')+otrosPat;
+   flows.push({from:a.fecha,to:b.fecha,UN,dep:B.dep_amort,
+     wcItems:[['Cuentas por cobrar clientes',-D('cxc_clientes')],['Otras cuentas por cobrar',-D('otras_cxc')],['Inventarios y obras',-D('inventarios')],['Impuestos y otros activos',-(D('impuestos_ac')+D('otros_ac'))],['Proveedores',D('proveedores')],['Obligaciones laborales y fiscales',D('laborales_fiscales')],['Anticipos de clientes',D('anticipos_clientes')],['Otros pasivos operativos',D('otros_pc')+D('otros_pnc')]],
+     wc,fco,capex,otrosInv:-D('otros_anc')-D('inversiones_cp'),fci,dDeuda:D('deuda_cp')+D('deuda_lp'),aportes:D('capital'),otrosPat,fcf,
+     fcl:fco+fci,total:fco+fci+fcf,dCaja:D('efectivo'),dif:fco+fci+fcf-D('efectivo')});
+ }
+ const lastFlow=flows.length&&L&&flows[flows.length-1].to===L.fecha?flows[flows.length-1]:null;
+ // puntaje
+ const catScores={}; const indScores={};
+ if(L){
+   const li=periods.indexOf(L);
+   for(const c in CATS){
+     const ss=IND.filter(i=>i.cat===c&&!i.info).map(i=>{ const s=scoreOf(vals[i.k][li],pol.t[i.k],i.hb); indScores[i.k]=s; return s; }).filter(s=>s!=null);
+     catScores[c]=ss.length?Math.round(ss.reduce((a,b)=>a+b,0)/ss.length):null;
+   }
+ }
+ let wsum=0,acc=0; for(const c in catScores){ if(catScores[c]!=null){ acc+=catScores[c]*pol.w[c]; wsum+=pol.w[c]; } }
+ const score=wsum?Math.round(acc/wsum):null;
+ // decisión
+ let decision='REVISAR'; const ko=[], why=[];
+ if(!L){ decision='SIN_DATOS'; }
+ else{
+   const li=periods.indexOf(L); const g=k=>vals[k][li];
+   if(!L.hasPL){ why.push('Falta el estado de resultados del último periodo: no se puede medir la capacidad de pago.'); }
+   if(Math.abs(L.d.descuadre)>Math.max(1,0.01*L.d.AT)) why.push(`El balance no cuadra: activo menos pasivo y patrimonio da ${fm(L.d.descuadre)}. Revise la clasificación en el paso 2.`);
+   if(L.d.PAT<=0) ko.push('Patrimonio negativo o nulo.');
+   const dp=g('dscr_pro'); if(dp!=null&&dp<1) ko.push(`El flujo disponible no cubre el servicio de la deuda con el nuevo crédito (DSCR ${fmt('x',dp)}).`);
+   const ci=g('cobertura_int'); if(ci!=null&&ci<1) ko.push('El resultado operativo no alcanza para pagar los intereses.');
+   if(PR&&PR.dscrMin!=null&&PR.dscrMin<1) ko.push(`El flujo proyectado por la empresa no cubre los pagos de deuda en ${yearLabel(PR,PR.yMin)} (DSCR ${fmt('x',PR.dscrMin)}).`);
+   if(L.hasPL&&L.d.UN<0&&(!lastFlow||lastFlow.fco<0)) ko.push('Pérdida neta en el último ejercicio'+(lastFlow?' y flujo operativo negativo.':'.'));
+   if(why.length&&!ko.length) decision='REVISAR';
+   else if(ko.length) decision='RECHAZAR';
+   else if(score>=70) decision='APROBAR';
+   else if(score>=50) decision='CONDICIONAL';
+   else decision='RECHAZAR';
+ }
+ const model={P,pol,periods,L,vals,flows,lastFlow,catScores,indScores,score,decision,ko,why,projR:PR};
+ try{ model.val=computeVal(L,P); }catch(e){ console.error(e); model.val={err:'No se pudo calcular el costo de capital con estos datos.'}; }
+ model.alerts=buildAlerts(model);
+ model.conditions=buildConditions(model);
+ return model;
+}
+
+function buildAlerts(m){
+ const out=[]; const {periods,L,P}=m;
+ if(!L) return out;
+ const d=L.d,f=L.f;
+ if(periods.filter(p=>p.hasBal).length<2) out.push(['info','Solo hay un balance: el flujo de caja se estima con EBITDA y no incluye variaciones de capital de trabajo. Cargue el balance del año anterior para calcularlo completo.']);
+ if(m.periods.dropped) out.push(['info',`Se cargaron más de tres periodos; se usan los tres más recientes.`]);
+ if(d.impEst) out.push(['warn',`El estado de resultados no registra el 15% de participación de trabajadores ni el impuesto a la renta. Para el análisis se estiman ${fm(d.part)} y ${fm(d.ir)}; la utilidad neta ajustada es ${fm(d.UN)}. Pida la declaración del impuesto a la renta (formulario 101 del SRI).`]);
+ if(L.hasPL&&f.costo_ventas<0.45*f.ventas&&f.gastos_op>0.25*f.ventas) out.push(['warn',`El costo de ventas (${(f.costo_ventas/f.ventas*100).toFixed(0)}% de las ventas) es bajo frente a los gastos operativos (${(f.gastos_op/f.ventas*100).toFixed(0)}%). Es probable que subcontratos u honorarios de obra estén registrados como gasto: el margen bruto y los días de inventario se distorsionan, el EBITDA no cambia.`]);
+ if(L.capitalized>0) out.push(['warn',`El inventario de obras incluye ${fm(L.capitalized)} de gastos activados (${[...new Set(L.capItems)].slice(0,5).join(', ').toLowerCase()}). Confirme que sean recuperables con la venta de los proyectos.`]);
+ if(d.deudaFin>0&&f.deuda_lp===0&&f.deuda_cp>0) out.push(['warn',`Toda la deuda financiera (${fm(f.deuda_cp)}) está registrada a corto plazo. Pida la tabla de amortización de cada préstamo para confirmar los vencimientos reales.`]);
+ if(L.hasPL&&L.reportedUtil!=null&&Math.abs(L.reportedUtil-d.UNreg)>Math.max(1,Math.abs(L.reportedUtil)*0.01)) out.push(['bad',`La utilidad calculada (${fm(d.UNreg)}) no coincide con la reportada (${fm(L.reportedUtil)}). Revise la clasificación del estado de resultados.`]);
+ if(L.hasPL&&f.resultado_ejercicio&&Math.abs(f.resultado_ejercicio-d.UNreg)>Math.max(1,Math.abs(f.resultado_ejercicio)*0.02)) out.push(['warn',`El resultado del ejercicio en el balance (${fm(f.resultado_ejercicio)}) difiere de la utilidad del estado de resultados (${fm(d.UNreg)}).`]);
+ if(L.totals&&L.totals.activo&&Math.abs(L.totals.activo-d.AT)>1) out.push(['bad',`El total de activos del reporte (${fm(L.totals.activo)}) no coincide con la suma clasificada (${fm(d.AT)}).`]);
+ if(L.hasPL&&L.meses!==12) out.push(['info',`El estado de resultados cubre ${L.meses} meses; los indicadores de flujo se anualizan.`]);
+ if(m.lastFlow&&Math.abs(m.lastFlow.dif)>1) out.push(['warn',`El flujo de caja no concilia con la variación del efectivo por ${fm(m.lastFlow.dif)}, porque alguno de los balances no cuadra.`]);
+ if(m.lastFlow&&m.lastFlow.fco<0) out.push(['bad',`El flujo operativo del último año fue negativo (${fm(m.lastFlow.fco)}): la operación consumió caja y se financió con ${m.lastFlow.fcf>0?'deuda o aportes':'el efectivo disponible'}.`]);
+ if(m.projR) projFindings(m.projR,P,ppEff(),L).filter(x=>x[0]==='bad'||x[0]==='warn').forEach(x=>out.push([x[0],'Flujo proyectado: '+x[1]]));
+ return out;
+}
+function buildConditions(m){
+ const out=[]; const {L,P,pol,vals,periods}=m; if(!L) return out;
+ const li=periods.indexOf(L); const g=k=>vals[k][li]; const d=L.d;
+ const lev=k=>levelOf(g(k),pol.t[k],IND.find(i=>i.k===k).hb);
+ const pro=d.pro;
+ if(pro&&pro.montoMax!=null&&P.monto>pro.montoMax) out.push(`Reducir el monto a un máximo de ${fm(pro.montoMax)} a ${P.plazo} meses, o ampliar el plazo, para mantener un DSCR de ${P.dscrObj.toFixed(2)}.`);
+ const cov=P.garantia>0?P.garantia/P.monto:0;
+ if(lev('apalancamiento')!=='good'||lev('endeudamiento')!=='good'||(m.score!=null&&m.score<70)) out.push(P.garantia>0?`Garantía real con cobertura mínima de 140% del monto. La garantía ofrecida cubre ${(cov*100).toFixed(0)}%${cov<1.4?': es insuficiente':''}.`:'Garantía real (hipotecaria o prendaria) con cobertura mínima de 140% del monto, más fianza personal de los accionistas.');
+ if(d.deudaFin>0&&d.f.deuda_cp/d.deudaFin>0.7) out.push('Presentar las tablas de amortización y el plan para trasladar la deuda bancaria de corto plazo a largo plazo antes del desembolso.');
+ out.push(`Compromisos financieros (covenants) anuales: deuda financiera neta / EBITDA menor o igual a ${pol.t.deuda_ebitda[1]?(pol.t.deuda_ebitda[0]+0.5).toFixed(1):'3.0'}x y DSCR de al menos ${P.dscrObj.toFixed(2)}x.`);
+ if(d.impEst) out.push('Declaración del impuesto a la renta (formulario 101 del SRI) y certificado de cumplimiento tributario.');
+ if(m.projR) out.push('Reporte trimestral del flujo de caja real frente al proyectado, con soportes de los cobros (contratos, planillas aprobadas, preventas).');
+ else out.push('Flujo de caja proyectado mensual por todo el plazo del crédito, con los pagos de la deuda actual y del crédito solicitado.');
+ if(state.sector==='construccion') out.push('Contratos de obra, preventas firmadas y cronograma de entregas por proyecto; avalúo de los proyectos en curso.');
+ if(lev('dias_cartera')==='bad'||lev('dias_cartera')==='mid') out.push('Reporte de antigüedad de cartera y detalle de los principales clientes.');
+ out.push('Estados financieros firmados por el representante legal y el contador, auditados cuando la compañía esté obligada por la Superintendencia de Compañías; reporte de buró de crédito de la empresa y los accionistas.');
+ return out;
+}
+
+/* ---------- Render: documentos ---------- */
+const DOC_TYPES=a=>a?(a.hasBal&&a.hasPL?'Balance y resultados':a.hasBal?'Balance general':a.hasPL?'Estado de resultados':'Sin cuentas reconocidas'):'';
+function renderDocs(){
+ const el=$('#docList');
+ if(!state.docs.length){ el.innerHTML='<p class="muted small">Aún no hay documentos cargados.</p>'; return; }
+ el.innerHTML=state.docs.map(doc=>{
+   const a=doc.agg;
+   const tags=[];
+   if(doc.source==='ejemplo') tags.push('<span class="tag warn">Ejemplo</span>');
+   if(doc.scanned) tags.push('<span class="tag warn">Escaneado: falta leerlo</span>');
+   else if(a) tags.push(`<span class="tag ${a.hasBal||a.hasPL?'ok':'warn'}">${esc(DOC_TYPES(a))}</span>`);
+   if(doc.ai) tags.push('<span class="tag ai">Clasificado por '+AI_NAME+'</span>');
+   else if(doc.rows) tags.push('<span class="tag">Clasificado por reglas</span>');
+   if(doc.source==='plantilla') tags.push('<span class="tag">Plantilla</span>');
+   const n=doc.rows?`${doc.rows.length} líneas · ${a?a.leaves:0} cuentas sumadas`:'';
+   const canAI=!!sampleFn&&doc.rows&&doc.rows.length>0;
+   const canRead=!!sampleFn&&doc.source==='pdf'&&imagesOK;
+   return `<div class="doc" data-id="${doc.id}">
+     <div><div class="name">${esc(doc.label)}</div><div class="meta">${tags.join('')} ${esc(n)}</div></div>
+     <label class="f" for="fe${doc.id}">Fecha de corte<input id="fe${doc.id}" type="date" data-act="fecha" value="${esc(doc.fecha||'')}"></label>
+     <label class="f" for="me${doc.id}">Meses<input id="me${doc.id}" class="meses" type="number" min="1" max="24" data-act="meses" value="${esc(doc.meses||12)}"></label>
+     <div class="row acts">
+       ${canRead?`<button type="button" data-act="read" title="${AI_NAME} lee las páginas como imagen">${doc.scanned?'Leer con '+AI_NAME+'':'Releer con '+AI_NAME+''}</button>`:''}
+       ${canAI?`<button type="button" data-act="ai">Clasificar con ${AI_NAME}</button>`:''}
+       ${doc.ai?`<button type="button" class="ghost" data-act="rules">Usar reglas</button>`:''}
+       <button type="button" class="ghost" data-act="del" aria-label="Quitar ${esc(doc.label)}">Quitar</button>
+     </div>
+   </div>`;
+ }).join('');
+ $('#exampleNote').hidden=!state.example;
+}
+
+/* ---------- Render: datos ---------- */
+function renderData(m){
+ const el=$('#dataTable'); const ps=m.periods;
+ if(!ps.length){ el.innerHTML='<p class="muted small">Carga documentos para ver los datos.</p>'; return; }
+ let h='<div class="tscroll"><table><thead><tr><th>Concepto</th>'+ps.map(p=>`<th class="r">${fecL(p.fecha)}${p.hasPL?`<br><span style="text-transform:none;letter-spacing:0;font-weight:500">${p.meses} meses</span>`:''}</th>`).join('')+'</tr></thead><tbody>';
+ const totalRow=(label,fn,cls='tot')=>`<tr class="${cls}"><td>${label}</td>${ps.map(p=>`<td class="r">${fn(p)}</td>`).join('')}</tr>`;
+ for(const [g,gl] of GROUPS){
+   h+=`<tr class="grp"><td colspan="${ps.length+1}">${gl}</td></tr>`;
+   FIELDS.filter(f=>f.g===g).forEach(f=>{
+     const cnt=ps.reduce((a,p)=>a+(p.src[f.k]||[]).length,0);
+     h+=`<tr><td><button type="button" class="lbtn" data-src="${f.k}" aria-expanded="false">${esc(f.l)}<span class="c">${cnt?cnt+' cta.':''}</span></button></td>`+ps.map(p=>{
+       const ov=state.overrides[p.fecha]&&(f.k in state.overrides[p.fecha]);
+       return `<td class="r"><input class="vin${ov?' edited':''}" type="text" inputmode="decimal" aria-label="${esc(f.l)} ${fecL(p.fecha)}" data-fecha="${p.fecha}" data-k="${f.k}" value="${money2.format(p.f[f.k]||0)}" title="${ov?'Valor editado. Automático: '+money2.format(p.auto[f.k]||0)+' (doble clic para restaurar)':'Valor calculado de los documentos'}"></td>`;
+     }).join('')+'</tr>';
+     h+=`<tr class="src" data-srcrow="${f.k}" hidden><td colspan="${ps.length+1}">`+ps.map(p=>{ const s=p.src[f.k]||[]; return `<div><strong>${fecL(p.fecha)}</strong>${s.length?'<ul>'+s.map(x=>`<li>${esc(x.code)} ${esc(x.name)}: ${money2.format(x.amount)}</li>`).join('')+'</ul>':' <span>sin cuentas</span>'}</div>`; }).join('')+'</td></tr>';
+   });
+   if(g==='AC') h+=totalRow('Total activo corriente',p=>fm(p.d.AC));
+   if(g==='ANC') h+=totalRow('Total activo',p=>fm(p.d.AT));
+   if(g==='PC') h+=totalRow('Total pasivo corriente',p=>fm(p.d.PC));
+   if(g==='PNC') h+=totalRow('Total pasivo',p=>fm(p.d.PT));
+   if(g==='PAT'){ h+=totalRow('Total patrimonio',p=>fm(p.d.PAT)); h+=totalRow('Cuadre: activo − pasivo − patrimonio',p=>{ const v=p.d.descuadre; const ok=Math.abs(v)<=Math.max(1,0.01*p.d.AT); return p.hasBal?`<span class="${ok?'chk-ok':'chk-bad'}">${ok?'✓ Cuadra':fm(v)}</span>`:'—'; }); }
+   if(g==='ER'){
+     h+=totalRow('EBITDA',p=>p.hasPL?fm(p.d.EBITDA):'—');
+     h+=totalRow('Utilidad antes de participación e impuestos',p=>p.hasPL?fm(p.d.UAI):'—');
+     h+=totalRow('Utilidad neta registrada',p=>p.hasPL?fm(p.d.UNreg)+(p.reportedUtil!=null?`<br><span class="small ${Math.abs(p.reportedUtil-p.d.UNreg)<=Math.max(1,Math.abs(p.reportedUtil)*0.01)?'chk-ok':'chk-bad'}">Reporte: ${fm(p.reportedUtil)}</span>`:''):'—');
+   }
+ }
+ h+='</tbody></table></div>';
+ el.innerHTML=h;
+}
+function refreshDataTotals(){ /* re-render keeping focus */
+ const a=document.activeElement; const key=a&&a.dataset&&a.dataset.k?[a.dataset.fecha,a.dataset.k]:null;
+ const m=compute(); lastModel=m; renderData(m); renderResults(m); renderProjOut(m); renderVal(m);
+ if(key){ const el=document.querySelector(`.vin[data-fecha="${key[0]}"][data-k="${key[1]}"]`); if(el) el.focus(); }
+}
+
+/* ---------- Render: política ---------- */
+function renderPolicy(){
+ const pol=state.policy;
+ $('#policyT').innerHTML='<thead><tr><th>Indicador</th><th class="r">Sólido</th><th class="r">Débil</th></tr></thead><tbody>'+IND.filter(i=>!i.info).map(i=>{
+   const t=pol.t[i.k]||[null,null]; const sc=i.u==='%'?100:1; const v=x=>x==null?'':+(x*sc).toFixed(4);
+   return `<tr><td>${esc(i.l)}${i.u==='%'?' (%)':i.u==='d'?' (días)':' (x)'}<br><span class="small muted">${i.hb?'Mayor es mejor':'Menor es mejor'}</span></td><td class="r"><input id="pt_${i.k}_0" type="number" step="any" data-pk="${i.k}" data-pi="0" value="${v(t[0])}" aria-label="${esc(i.l)} sólido"></td><td class="r"><input id="pt_${i.k}_1" type="number" step="any" data-pk="${i.k}" data-pi="1" value="${v(t[1])}" aria-label="${esc(i.l)} débil"></td></tr>`;
+ }).join('')+'</tbody>';
+ $('#weightsT').innerHTML='<thead><tr><th>Categoría</th><th class="r">Peso</th></tr></thead><tbody>'+Object.keys(CATS).map(c=>`<tr><td>${CATS[c]}</td><td class="r"><input id="pw_${c}" type="number" min="0" max="100" data-pw="${c}" value="${pol.w[c]}" aria-label="Peso ${CATS[c]}"></td></tr>`).join('')+'</tbody>';
+}
+function renderParams(){
+ const P=state.params;
+ $('#p_monto').value=money0.format(P.monto); $('#p_plazo').value=P.plazo; $('#p_tasa').value=P.tasa; $('#p_garantia').value=money0.format(P.garantia);
+ $('#p_pctCP').value=P.pctCP; $('#p_aniosLP').value=P.aniosLP; $('#p_dscrObj').value=P.dscrObj; $('#p_refinancia').checked=!!P.refinancia; $('#p_estimarImp').checked=!!P.estimarImp;
+ $('#sector').value=state.sector; $('#empresa').value=state.empresa;
+ $('#p_sistema').value=P.sistema||'frances'; $('#p_frecuencia').value=String(P.frecuencia||1); $('#p_gracia').value=P.gracia||0;
+ const pp=state.pp; $('#pp_len').value=String(pp.len||0); $('#pp_des').value=pp.desembolso; $('#pp_fuente').value=pp.fuente; $('#pp_estres').value=pp.estres;
+ $('#pp_saldo').value=pp.saldoIni==null?'':money0.format(pp.saldoIni); $('#pp_incl').checked=!!pp.incluyeDesembolso; $('#pp_deuda').checked=!!pp.agregarDeuda;
+ const V=state.val; ['rf','erp','crp','size','tax','bu','kd','rp'].forEach(k=>{ $('#v_'+k).value=V[k]==null?'':V[k]; });
+}
+
+/* ---------- Render: resultados ---------- */
+const DEC_TXT={APROBAR:'Aprobar',CONDICIONAL:'Aprobar con condiciones',RECHAZAR:'No aprobar',REVISAR:'Revisar información',SIN_DATOS:'Sin datos'};
+function dial(score,decision){
+ const s=score==null?0:score; const a=Math.PI*(1-s/100); const r=52,cx=66,cy=64;
+ const x=cx+r*Math.cos(a), y=cy-r*Math.sin(a);
+ const col=decision==='APROBAR'?'var(--good)':decision==='CONDICIONAL'?'var(--warn)':decision==='RECHAZAR'?'var(--bad)':'var(--accent)';
+ return `<svg class="dial" viewBox="0 0 132 84" role="img" aria-label="Puntaje ${score==null?'sin calcular':score+' de 100'}">
+  <path d="M14 64 A52 52 0 0 1 118 64" fill="none" stroke="var(--surface-2)" stroke-width="12" stroke-linecap="round"/>
+  ${score!=null&&s>0?`<path d="M14 64 A52 52 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)}" fill="none" stroke="${col}" stroke-width="12" stroke-linecap="round"/>`:''}
+  <text x="66" y="60" text-anchor="middle" font-family="Archivo, sans-serif" font-weight="800" font-size="26" fill="var(--fg)">${score==null?'—':score}</text>
+  <text x="66" y="78" text-anchor="middle" font-size="10" fill="var(--muted)">de 100 puntos</text></svg>`;
+}
+function renderVerdict(m){
+ const el=$('#resumen'); el.dataset.d=m.decision;
+ if(!m.L){ el.innerHTML=`${dial(null,'')}<div class="dec"><span class="eyebrow">Veredicto</span><div class="decision d-REVISAR">Carga los estados financieros</div><p class="muted small">Sube el balance general y el estado de resultados (PDF o Excel) en el paso 1.</p></div>`; return; }
+ const d=m.L.d, li=m.periods.indexOf(m.L), g=k=>m.vals[k][li];
+ const reasons=[...m.ko,...m.why];
+ const sub=m.decision==='APROBAR'?'Los indicadores y el flujo respaldan el crédito solicitado.':m.decision==='CONDICIONAL'?'El crédito es viable con garantías y condiciones.':m.decision==='RECHAZAR'?'El riesgo supera la capacidad de pago o la solidez de la empresa.':'Complete o corrija la información antes de decidir.';
+ el.innerHTML=`${dial(m.score,m.decision)}
+  <div class="dec">
+   <span class="eyebrow">Veredicto · ${esc(state.empresa||'Empresa')} · corte ${fecL(m.L.fecha)}</span>
+   <div class="decision d-${m.decision}">${DEC_TXT[m.decision]}</div>
+   <p class="small">${sub} Crédito evaluado: ${fm(state.params.monto)} a ${state.params.plazo} meses al ${state.params.tasa}%.</p>
+   ${reasons.length?`<ul class="reasons small">${reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`:''}
+  </div>
+  <div class="kpis">
+   <div class="kpi"><span class="v">${fmt('x',g('dscr_pro'))}</span><span class="l">DSCR con el nuevo crédito</span></div>
+   <div class="kpi"><span class="v">${d.pro&&d.pro.montoMax!=null?fm(d.pro.montoMax):'—'}</span><span class="l">Monto máximo sostenible (DSCR ${state.params.dscrObj})</span></div>
+   <div class="kpi"><span class="v">${fmt('x',g('deuda_ebitda'))}</span><span class="l">Deuda neta / EBITDA</span></div>
+   ${m.projR?`<div class="kpi"><span class="v">${fmt('x',m.projR.dscrMin)}</span><span class="l">DSCR mínimo del flujo proyectado</span></div>`:`<div class="kpi"><span class="v">${m.lastFlow?fm(m.lastFlow.fco):(m.L.hasPL?fm(d.flujoDisp):'—')}</span><span class="l">${m.lastFlow?'Flujo operativo del año':'Flujo disponible estimado'}</span></div>`}
+  </div>`;
+}
+function catColor(s){ return s==null?'var(--line)':s>=70?'var(--good)':s>=50?'var(--warn)':'var(--bad)'; }
+function waterfall(fl){
+ const steps=[['Utilidad neta',fl.UN],['Depreciación',fl.dep],['Capital de trabajo',fl.wc],['Flujo operativo',fl.fco,1],['Inversiones',fl.fci],['Financiamiento',fl.fcf],['Variación de caja',fl.total,1]];
+ let run=0; const bars=steps.map(([l,v,t])=>{ let y0,y1; if(t){ y0=0; y1=v; run=v; } else { y0=run; y1=run+v; run=y1; } return {l,v,t,y0,y1}; });
+ const W=640,H=250,pad={l:12,r:12,t:22,b:46}; const vals=bars.flatMap(b=>[b.y0,b.y1]).concat(0);
+ let mn=Math.min(...vals), mx=Math.max(...vals); if(mx===mn){mx+=1;}
+ const sy=v=>pad.t+(mx-v)/(mx-mn)*(H-pad.t-pad.b);
+ const bw=(W-pad.l-pad.r)/bars.length;
+ let s=`<svg class="wf" viewBox="0 0 ${W} ${H}" role="img" aria-label="Cascada del flujo de caja"><line x1="${pad.l}" x2="${W-pad.r}" y1="${sy(0)}" y2="${sy(0)}" stroke="var(--line)"/>`;
+ bars.forEach((b,i)=>{ const x=pad.l+i*bw+bw*0.18, w=bw*0.64; const top=sy(Math.max(b.y0,b.y1)), hgt=Math.max(1.5,Math.abs(sy(b.y0)-sy(b.y1)));
+   const col=b.t?'var(--accent)':b.v>=0?'var(--good)':'var(--bad)';
+   s+=`<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${w.toFixed(1)}" height="${hgt.toFixed(1)}" rx="3" fill="${col}"/>`;
+   s+=`<text x="${(x+w/2).toFixed(1)}" y="${(top-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--fg)">${esc(fm(b.v))}</text>`;
+   const words=b.l.split(' '); const l1=words.slice(0,Math.ceil(words.length/2)).join(' '), l2=words.slice(Math.ceil(words.length/2)).join(' ');
+   s+=`<text x="${(x+w/2).toFixed(1)}" y="${H-28}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(l1)}</text><text x="${(x+w/2).toFixed(1)}" y="${H-14}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(l2)}</text>`;
+ });
+ return s+'</svg>';
+}
+function structureBars(ps){
+ const ok=ps.filter(p=>p.hasBal); if(!ok.length) return '';
+ const mx=Math.max(...ok.map(p=>Math.max(p.d.AT,p.d.PT+Math.max(0,p.d.PAT))));
+ const seg=(v,c,t)=>v>0?`<span style="width:${(v/mx*100).toFixed(2)}%;background:${c}" title="${t}: ${fm(v)}"></span>`:'';
+ return `<div class="struct">${ok.map(p=>`<div class="sbar"><span>${fecL(p.fecha)}<br><span class="muted">Activo</span></span><div class="stack">${seg(p.d.AC,'var(--accent)','Activo corriente')}${seg(p.d.ANC,'color-mix(in srgb, var(--accent) 45%, var(--surface-2))','Activo no corriente')}</div></div>
+  <div class="sbar"><span class="muted">Financiado por</span><div class="stack">${seg(p.d.PC,'var(--bad)','Pasivo corriente')}${seg(p.d.PNC,'var(--warn)','Pasivo no corriente')}${seg(Math.max(0,p.d.PAT),'var(--good)','Patrimonio')}</div></div>`).join('')}
+  <div class="legend"><span><i style="background:var(--accent)"></i>Activo corriente</span><span><i style="background:color-mix(in srgb, var(--accent) 45%, var(--surface-2))"></i>Activo no corriente</span><span><i style="background:var(--bad)"></i>Pasivo corriente</span><span><i style="background:var(--warn)"></i>Pasivo no corriente</span><span><i style="background:var(--good)"></i>Patrimonio</span></div></div>`;
+}
+function renderResults(m){
+ renderVerdict(m);
+ const el=$('#results');
+ if(!m.L){ el.innerHTML='<p class="muted">El análisis aparece cuando haya al menos un balance general.</p>'; return; }
+ const ps=m.periods, li=ps.indexOf(m.L), P=m.P, d=m.L.d;
+ let h='';
+ // Categorías
+ h+=`<div class="grid2"><div style="display:grid;gap:12px;align-content:start"><h3>Puntaje por categoría</h3><div class="cats">${Object.keys(CATS).map(c=>{ const s=m.catScores[c]; return `<div class="cat"><span>${CATS[c]} <span class="muted small">· ${m.pol.w[c]}%</span></span><div class="bar"><i style="width:${s||0}%;background:${catColor(s)}"></i></div><strong class="num" style="text-align:right">${s==null?'—':s}</strong></div>`; }).join('')}</div></div>
+  <div style="display:grid;gap:12px;align-content:start"><h3>Estructura de financiamiento</h3>${structureBars(ps)}</div></div>`;
+ // Indicadores
+ h+=`<h3>Indicadores financieros</h3><div class="tscroll"><table class="ind"><thead><tr><th>Indicador</th>${ps.map(p=>`<th class="r">${fecL(p.fecha)}</th>`).join('')}<th>Evaluación</th><th>Comentario</th></tr></thead><tbody>`;
+ for(const c in CATS){
+   h+=`<tr class="catrow"><td colspan="${ps.length+3}">${CATS[c]}</td></tr>`;
+   IND.filter(i=>i.cat===c).forEach(ind=>{
+     const v=m.vals[ind.k][li]; const lv=ind.info?null:levelOf(v,m.pol.t[ind.k],ind.hb);
+     let prev=null,prevF=null; for(let j=li-1;j>=0;j--){ if(m.vals[ind.k][j]!=null){prev=m.vals[ind.k][j];prevF=ps[j].fecha;break;} }
+     const pdata=Object.assign({},d); const cm=commentFor(ind,v,lv,pdata,P,state.sector)+(v!=null?trendTxt(ind,v,prev,prevF):'');
+     h+=`<tr><td class="lab">${esc(ind.l)}</td>${ps.map((p,j)=>`<td class="r num">${fmt(ind.u,m.vals[ind.k][j])}</td>`).join('')}<td>${lv?`<span class="pill ${lv}">${LVTXT[lv]}</span>`:(v!=null?'<span class="pill info">Referencia</span>':'')}</td><td class="cm">${esc(cm)}</td></tr>`;
+   });
+ }
+ h+='</tbody></table></div>';
+ // Flujo de caja
+ h+='<h3>Flujo de caja</h3>';
+ if(m.flows.length){
+   const fl=m.flows;
+   const row=(l,fn,cls='')=>`<tr class="${cls}"><td>${l}</td>${fl.map(f=>`<td class="r num">${fn(f)}</td>`).join('')}</tr>`;
+   h+=`<p class="small muted">Método indirecto a partir de la variación entre balances y la utilidad del periodo.</p><div class="tscroll"><table><thead><tr><th>Concepto</th>${fl.map(f=>`<th class="r">${fecL(f.from)} → ${fecL(f.to)}</th>`).join('')}</tr></thead><tbody>`;
+   h+=row('Utilidad neta registrada',f=>fm(f.UN));
+   h+=row('(+) Depreciaciones y amortizaciones',f=>fm(f.dep));
+   fl[0].wcItems.forEach((it,ix)=>{ h+=row('&nbsp;&nbsp;'+esc(it[0]),f=>fm(f.wcItems[ix][1])); });
+   h+=row('(±) Variación del capital de trabajo',f=>fm(f.wc));
+   h+=row('Flujo de caja operativo',f=>fm(f.fco),'tot');
+   h+=row('Inversión en activos fijos (neta)',f=>fm(f.capex));
+   h+=row('Otras inversiones',f=>fm(f.otrosInv));
+   h+=row('Flujo de inversión',f=>fm(f.fci),'tot');
+   h+=row('Flujo de caja libre (operativo + inversión)',f=>fm(f.fcl),'tot');
+   h+=row('Nueva deuda financiera (− pagos)',f=>fm(f.dDeuda));
+   h+=row('Aportes de capital',f=>fm(f.aportes));
+   h+=row('Dividendos y otros movimientos de patrimonio',f=>fm(f.otrosPat));
+   h+=row('Flujo de financiamiento',f=>fm(f.fcf),'tot');
+   h+=row('Variación del efectivo calculada',f=>fm(f.total),'tot');
+   h+=row('Variación del efectivo en el balance',f=>`${fm(f.dCaja)} ${Math.abs(f.dif)<=1?'<span class="chk-ok">✓</span>':'<span class="chk-bad">✗</span>'}`);
+   h+='</tbody></table></div>';
+   const lf=m.flows[m.flows.length-1];
+   h+=`<div class="tscroll" style="padding:10px">${waterfall(lf)}</div>`;
+   h+=`<p class="small">${esc(flowComment(lf,d))}</p>`;
+ } else {
+   h+=`<div class="alert info">Con un solo balance no hay variaciones para armar el flujo de caja completo. Estimación con el estado de resultados:</div>`;
+   if(m.L.hasPL){
+     h+=`<div class="tscroll"><table><tbody>
+       <tr><td>EBITDA anual</td><td class="r num">${fm(d.EBITDA_A)}</td></tr>
+       <tr><td>(−) Participación e impuesto a la renta${d.impEst?' estimados':''}</td><td class="r num">${fm(-d.IMP_A)}</td></tr>
+       <tr class="tot"><td>Flujo disponible para la deuda (antes de capital de trabajo)</td><td class="r num">${fm(d.flujoDisp)}</td></tr>
+       <tr><td>Utilidad neta + depreciación (aproximación del flujo operativo)</td><td class="r num">${fm(d.UN_A+d.f.dep_amort*d.k)}</td></tr>
+     </tbody></table></div>`;
+   }
+ }
+ // Capacidad de pago
+ if(m.L.hasPL&&d.pro){
+   const pro=d.pro;
+   h+=`<h3>Capacidad de pago</h3><div class="grid2"><div class="tscroll"><table><tbody>
+    <tr><td>Flujo disponible anual (EBITDA − impuestos)</td><td class="r num">${fm(d.flujoDisp)}</td></tr>
+    <tr><td>Intereses de la deuda actual</td><td class="r num">${fm(d.GF_A)}</td></tr>
+    <tr><td>Capital a pagar en 12 meses (${P.pctCP}% de la deuda de corto plazo${d.f.deuda_lp?` + 1/${P.aniosLP} de la de largo plazo`:''})</td><td class="r num">${fm(d.principal)}</td></tr>
+    ${P.refinancia?`<tr><td>(−) Deuda de corto plazo refinanciada con el nuevo crédito</td><td class="r num">${fm(-pro.relief)}</td></tr>`:''}
+    <tr><td>Primera cuota del nuevo crédito (${SIS[P.sistema]||'francés'}, pago ${FREQ[P.frecuencia]||'mensual'}${P.gracia?`, ${P.gracia} meses de gracia`:''})</td><td class="r num">${fm(pro.cuota)}</td></tr>
+    <tr><td>Pagos del nuevo crédito en 12 meses</td><td class="r num">${fm(pro.anual)}</td></tr>
+    <tr class="tot"><td>Servicio total de la deuda en 12 meses</td><td class="r num">${fm(pro.serv)}</td></tr>
+    <tr class="tot"><td>DSCR con el nuevo crédito</td><td class="r num">${fmt('x',pro.dscrPro)}</td></tr>
+   </tbody></table></div>
+   <div style="display:grid;gap:10px;align-content:start">
+    <div class="kpi"><span class="v">${pro.montoMax!=null?fm(pro.montoMax):'—'}</span><span class="l">Monto máximo que el flujo soporta a ${P.plazo} meses y ${P.tasa}%, con DSCR ${P.dscrObj}</span></div>
+    <p class="small">${esc(capacityComment(d,pro,P))}</p>
+   </div></div>`;
+ }
+ // Alertas y condiciones
+ h+=`<div class="grid2"><div style="display:grid;gap:10px;align-content:start"><h3>Alertas sobre la información</h3>${m.alerts.length?`<div class="alerts">${m.alerts.map(a=>`<div class="alert ${a[0]==='bad'?'bad':a[0]==='info'?'info':''}">${esc(a[1])}</div>`).join('')}</div>`:'<p class="small muted">Sin alertas.</p>'}</div>
+  <div style="display:grid;gap:10px;align-content:start"><h3>${m.decision==='RECHAZAR'?'Qué tendría que cambiar para reconsiderar':'Condiciones y documentos sugeridos'}</h3><ul class="list small">${m.conditions.map(c=>`<li>${esc(c)}</li>`).join('')}</ul></div></div>`;
+ el.innerHTML=h;
+}
+function flowComment(f,d){
+ const parts=[];
+ parts.push(f.fco>=0?`La operación generó ${fm(f.fco)} de caja entre ${fecL(f.from)} y ${fecL(f.to)}.`:`La operación consumió ${fm(-f.fco)} de caja entre ${fecL(f.from)} y ${fecL(f.to)}, pese a una utilidad de ${fm(f.UN)}.`);
+ const big=f.wcItems.slice().sort((a,b)=>a[1]-b[1])[0];
+ if(f.wc<0&&big&&big[1]<0) parts.push(`El capital de trabajo absorbió ${fm(-f.wc)}, sobre todo por ${big[0].toLowerCase()} (${fm(big[1])}).`);
+ if(f.wc>0) parts.push(`El capital de trabajo liberó ${fm(f.wc)}.`);
+ if(f.fci<0) parts.push(`Invirtió ${fm(-f.fci)} en activos.`);
+ if(f.dDeuda>0) parts.push(`Tomó ${fm(f.dDeuda)} de deuda financiera neta.`); else if(f.dDeuda<0) parts.push(`Redujo su deuda financiera en ${fm(-f.dDeuda)}.`);
+ if(f.otrosPat<0) parts.push(`Distribuyó o ajustó ${fm(-f.otrosPat)} de patrimonio.`);
+ parts.push(f.fcl>=0?`El flujo libre positivo (${fm(f.fcl)}) indica que puede atender deuda con recursos propios.`:`El flujo libre negativo (${fm(f.fcl)}) muestra que dependió de financiamiento externo.`);
+ return parts.join(' ');
+}
+function capacityComment(d,pro,P){
+ if(pro.montoMax==null) return '';
+ if(pro.montoMax<=0) return `Con la deuda actual el flujo disponible (${fm(d.flujoDisp)}) no deja espacio para un nuevo crédito con DSCR ${P.dscrObj}.`+(P.pctCP>0&&d.f.deuda_cp>0&&!P.refinancia?` El cálculo supone que el ${P.pctCP}% de la deuda bancaria de corto plazo (${fm(d.f.deuda_cp)}) se paga en 12 meses. Si se renueva o este crédito la refinancia, cambie el supuesto en el paso 3.`:'');
+ if(P.monto<=pro.montoMax) return `El monto solicitado (${fm(P.monto)}) está dentro de la capacidad de pago: el flujo soporta hasta ${fm(pro.montoMax)}.`;
+ return `El monto solicitado (${fm(P.monto)}) supera la capacidad de pago; el máximo sostenible es ${fm(pro.montoMax)} con estas condiciones.`;
+}
+
+/* ---------- Flujo proyectado ---------- */
+const PCATS=[['ingresos','Cobros e ingresos operativos'],['egresos','Pagos operativos'],['impuestos','Impuestos y participación'],['inversiones','Inversiones en activos'],['deuda_existente','Pago de deuda existente'],['deuda_nueva','Pago propuesto del crédito solicitado'],['financiamiento','Desembolsos y aportes recibidos'],['otros_salidas','Dividendos y otras salidas'],['saldo_inicial','Saldo inicial de caja'],['tot_ing','Total ingresos (solo si no hay detalle)'],['tot_egr','Total egresos (solo si no hay detalle)'],['omitir','No considerar (título o subtotal)']];
+const PCK=Object.fromEntries(PCATS.map(c=>[c[0],c]));
+const MON={ENE:1,JAN:1,FEB:2,MAR:3,ABR:4,APR:4,MAY:5,JUN:6,JUL:7,AGO:8,AUG:8,SEP:9,SET:9,OCT:10,NOV:11,DIC:12,DEC:12};
+function parsePeriod(c){
+ if(c==null||c==='') return null;
+ if(c instanceof Date&&!isNaN(c)) return {t:'d',date:iso(c.getFullYear(),c.getMonth()+1,1),label:`${String(c.getMonth()+1).padStart(2,'0')}/${c.getFullYear()}`};
+ if(typeof c==='number') return Number.isInteger(c)&&c>=2000&&c<=2100?{t:'y',year:c,label:String(c)}:null;
+ const raw=String(c).trim(), s=norm(raw); let m;
+ if(s.length>24) return null;
+ if((m=s.match(/^MES\s*(\d{1,3})$/))) return {t:'m',label:raw};
+ if((m=s.match(/^(ANO|YEAR)\s*(\d{1,2})$/))) return {t:'y',label:raw};
+ if(/^(T|Q|TRIM(ESTRE)?)\s*\d/.test(s)) return {t:'q',label:raw};
+ if(/^(S|SEM(ESTRE)?)\s*\d/.test(s)) return {t:'s',label:raw};
+ if((m=s.match(/^((19|20)\d{2})$/))) return {t:'y',year:+m[1],label:raw};
+ if((m=s.match(/^((19|20)\d{2})[-\/](\d{1,2})$/))&&+m[3]>=1&&+m[3]<=12) return {t:'d',date:iso(+m[1],+m[3],1),label:raw};
+ if((m=s.match(/^([A-Z]{3})[A-Z]*\.?[\s\-\/]*'?(\d{2}|\d{4})?$/))&&MON[m[1]]){ const y=m[2]?(m[2].length===2?2000+ +m[2]:+m[2]):null; return y?{t:'d',date:iso(y,MON[m[1]],1),label:raw}:{t:'m',label:raw}; }
+ const ds=findDates(s); if(ds.length) return {t:'d',date:ds[0].iso.slice(0,8)+'01',label:raw};
+ return null;
+}
+function projLen(ps){
+ if(ps.every(p=>p.t==='y')) return 12; if(ps.every(p=>p.t==='q')) return 3; if(ps.every(p=>p.t==='s')) return 6;
+ if(ps.length>=2&&ps[0].date&&ps[1].date){ const [y1,m1]=ps[0].date.split('-').map(Number),[y2,m2]=ps[1].date.split('-').map(Number); const df=(y2-y1)*12+(m2-m1); if([1,3,6,12].includes(df)) return df; }
+ return 1;
+}
+const R_SI=/SALDO INICIAL|CAJA INICIAL|SALDO ANTERIOR|EFECTIVO AL INICIO/;
+const R_TOTI=/^TOTAL (DE )?(LOS )?(INGRESOS|ENTRADAS|COBROS)/, R_TOTE=/^TOTAL (DE )?(LOS )?(EGRESOS|SALIDAS|PAGOS|GASTOS|COSTOS)/;
+const R_OMIT=/^TOTAL|SUBTOTAL|SALDO FINAL|FLUJO NETO|FLUJO DE CAJA|SALDO DE CAJA|ACUMULAD|DIFERENCIA|SUPERAVIT|DEFICIT|^NETO|DISPONIBLE|SALDO AL FINAL/;
+const R_DES=/DESEMBOLSO|APORTE|CAPITALIZACION|PRESTAMO RECIBIDO|CREDITO RECIBIDO|NUEVO FINANCIAMIENTO/;
+const R_NEW=/(NUEVO|SOLICITADO|PROPUESTO|ESTE) (CREDITO|PRESTAMO)|(CREDITO|PRESTAMO) (NUEVO|SOLICITADO|PROPUESTO|A OTORGAR|EN TRAMITE)/;
+const R_DIV=/DIVIDENDO|RETIRO|UTILIDADES A SOCIOS/;
+const R_TAX=/IMPUESTO|(^| )IVA( |$)|(^| )SRI( |$)|RETENCION|PARTICIPACION/;
+const R_INV=/INVERSION|CAPEX|COMPRA DE (ACTIVO|EQUIPO|MAQUINARIA|VEHICULO|TERRENO)|ACTIVOS? FIJO/;
+const R_DEBT=/PRESTAMO|CREDITO|CUOTA|AMORTIZACION|INTERES|BANCO|OBLIGACION(ES)? FINANCIERA|DEUDA|TARJETA/;
+const R_IN=/INGRESO|COBRO|VENTA|RECAUDA|ENTRADA|ANTICIPO DE CLIENTE|PREVENTA|FACTURA|PLANILLA/;
+const R_OUT=/EGRESO|SALIDA|PAGO|PROVEEDOR|COSTO|GASTO|SUELDO|NOMINA|MANO DE OBRA|MATERIAL|SUBCONTRAT|ARRIENDO|SERVICIO|IESS|BENEFICIO|COMPRA|HONORARIO|MANTENIMIENTO|PUBLICIDAD|SEGURO|COMBUSTIBLE|TRANSPORTE/;
+function classifyProj(rows){
+ let sec=null;
+ rows.forEach(r=>{
+   const n=norm(r.name); const tot=r.vals.reduce((a,b)=>a+b,0);
+   if(r.header){
+     if(/INGRESO|ENTRADA|COBRO/.test(n)) sec='ingresos'; else if(/FINANCIA/.test(n)) sec='fin'; else if(R_INV.test(n)) sec='inversiones'; else if(/EGRESO|SALIDA|PAGO|GASTO|COSTO/.test(n)) sec='egresos';
+     r.auto=R_SI.test(n)?'saldo_inicial':'omitir'; return;
+   }
+   let c=null;
+   if(R_SI.test(n)) c='saldo_inicial';
+   else if(R_TOTI.test(n)) c='tot_ing';
+   else if(R_TOTE.test(n)) c='tot_egr';
+   else if(R_OMIT.test(n)) c='omitir';
+   else if(R_DES.test(n)&&!/PAGO|CUOTA|AMORTIZ/.test(n)) c='financiamiento';
+   else if(R_NEW.test(n)) c='deuda_nueva';
+   else if(R_DIV.test(n)) c='otros_salidas';
+   else if(R_TAX.test(n)) c='impuestos';
+   else if(R_INV.test(n)) c='inversiones';
+   else if(R_DEBT.test(n)) c=(sec==='fin'&&tot>0)||(sec==='ingresos')?'financiamiento':'deuda_existente';
+   else if(sec==='ingresos') c='ingresos';
+   else if(sec==='egresos') c='egresos';
+   else if(sec==='fin') c=tot>0?'financiamiento':'deuda_existente';
+   else if(sec==='inversiones') c='inversiones';
+   else if(R_IN.test(n)) c='ingresos';
+   else if(R_OUT.test(n)) c='egresos';
+   else c=tot<0?'egresos':'ingresos';
+   r.auto=c;
+ });
+}
+function makeProj(file,source,periods,rows,extra){
+ const pr=Object.assign({file,source,periods,len:projLen(periods),rows},extra||{});
+ classifyProj(pr.rows); pr.rows.forEach(r=>{ r.cat=r.tipo&&PCK[r.tipo]?r.tipo:r.auto; });
+ return pr;
+}
+function parseProjAoa(aoa,fname){
+ let hi=-1,pcols=[];
+ for(let i=0;i<Math.min(30,aoa.length);i++){ const r=aoa[i]||[]; const pc=[]; r.forEach((c,j)=>{ const p=parsePeriod(c); if(p) pc.push([j,p]); }); if(pc.length>=2){ hi=i; pcols=pc; break; } }
+ if(hi<0) return null;
+ const hdr=aoa[hi]; const tipoCol=hdr.findIndex(c=>['TIPO','CATEGORIA'].includes(norm(c))); const firstP=pcols[0][0];
+ const rows=[];
+ for(const r of aoa.slice(hi+1)){
+   if(!r) continue; let name='';
+   for(let j=0;j<firstP;j++){ const c=r[j]; if(j!==tipoCol&&typeof c==='string'&&/[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(c)){ name=c.trim(); break; } }
+   if(!name) continue;
+   let has=false; const vals=pcols.map(([j])=>{ const c=r[j]; const v=typeof c==='number'?c:parseNum(c); if(c!=null&&c!==''&&!isNaN(v)) has=true; return isNaN(v)?0:v; });
+   rows.push({name,vals,header:!has,tipo:tipoCol>=0?String(r[tipoCol]||'').trim():''});
+ }
+ return makeProj(fname,'excel',pcols.map(x=>x[1]),rows);
+}
+async function ingestProjExcel(file){
+ if(!window.XLSX) throw new Error('No se pudo cargar el lector de Excel. Recarga la página.');
+ const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+ for(const sn of wb.SheetNames){ const pr=parseProjAoa(XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null}),file.name); if(pr&&pr.rows.length) return pr; }
+ return null;
+}
+async function ingestProjPdf(file){
+ const r=await readPdf(file);
+ const empty={file:file.name,source:'pdf',fileBuf:r.buf,periods:[],rows:[],len:1};
+ if(r.chars<40*r.pages) return Object.assign(empty,{scanned:true});
+ let hdr=null,hl=null;
+ for(const l of r.lines){ const ps=l.items.map(it=>({it,p:parsePeriod(it.s)})).filter(x=>x.p); if(ps.length>=2){ hdr=ps; hl=l; break; } }
+ if(!hdr) return empty;
+ const cx=hdr.map(h=>h.it.x+h.it.w/2), firstX=Math.min(...hdr.map(h=>h.it.x));
+ const rows=[]; let past=false;
+ for(const l of r.lines){
+   if(!past){ if(l===hl) past=true; continue; }
+   const name=l.items.filter(it=>it.x<firstX-4&&isNaN(parseNum(it.s))).map(i=>i.s).join(' ').trim();
+   if(!name||!/[A-Za-zÁÉÍÓÚÑáéíóúñ]/.test(name)) continue;
+   const vals=cx.map(()=>0); let has=false;
+   l.items.forEach(it=>{ if(it.x<firstX-4) return; const v=parseNum(it.s); if(isNaN(v)) return; const c=it.x+it.w/2; let bi=0,bd=Infinity; cx.forEach((x,i)=>{ const dd=Math.abs(x-c); if(dd<bd){bd=dd;bi=i;} }); vals[bi]+=v; has=true; });
+   rows.push({name,vals,header:!has,tipo:''});
+ }
+ return makeProj(file.name,'pdf',hdr.map(h=>h.p),rows,{fileBuf:r.buf});
+}
+function ppEff(){ const pp=state.pp; return Object.assign({},pp,{len:pp.len||(state.proj?state.proj.len:1)}); }
+function yearLabel(R,y){ if(!y) return '—'; if(R.len>=12) return R.labels[y.from]; return `Año ${y.i+1} (${R.labels[y.from]} a ${R.labels[y.to]})`; }
+function existingServiceMonthly(d,P,H){
+ const f=d.f, lpA=P.aniosLP>0?f.deuda_lp/P.aniosLP:0, cpDue=f.deuda_cp*P.pctCP/100, tot=d.deudaFin;
+ let R=tot, lpRem=f.deuda_lp; const per=[];
+ for(let y=1;y<=Math.ceil(H/12);y++){ const capLP=Math.min(lpRem,lpA); const cap=(y===1?cpDue:0)+capLP; const it=tot>0?d.GF_A*R/tot:0; per.push((cap+it)/12); lpRem-=capLP; R=Math.max(0,R-cap); }
+ return Array.from({length:H},(_,i)=>per[Math.floor(i/12)]);
+}
+function computeProj(pr,P,PP,L){
+ const n=pr.periods.length; if(!n) return null;
+ const len=PP.len||1, H=n*len, z=()=>Array(n).fill(0);
+ const sumCat=c=>{ const o=z(); pr.rows.forEach(r=>{ if(r.cat!==c||r.header&&c!=='saldo_inicial') return; const s=r.vals.reduce((a,b)=>a+b,0); const sg=s<0?-1:1; r.vals.forEach((v,i)=>{ if(i<n) o[i]+=v*sg; }); }); return o; };
+ let ing=sumCat('ingresos'); if(!ing.some(v=>v)) ing=sumCat('tot_ing');
+ let egr=sumCat('egresos'); if(!egr.some(v=>v)) egr=sumCat('tot_egr');
+ const imp=sumCat('impuestos'), inv=sumCat('inversiones'), fin=sumCat('financiamiento'), oth=sumCat('otros_salidas'), dnewC=sumCat('deuda_nueva');
+ let dex=sumCat('deuda_existente'); const dexInFile=dex.some(v=>v); let dexAdded=false;
+ if(!dexInFile&&PP.agregarDeuda&&L&&L.d.deudaFin>0){ const mth=existingServiceMonthly(L.d,P,H); dex=z(); mth.forEach((v,i)=>{ dex[Math.floor(i/len)]+=v; }); dexAdded=true; }
+ const sch=schedule(P), desIdx=Math.max(0,Math.min(n-1,(PP.desembolso||1)-1));
+ const newCalc=z(); let outside=0,outsideN=0;
+ sch.forEach(x=>{ const mo=desIdx*len+x.mo; const b=Math.floor((mo-1)/len); if(b<n) newCalc[b]+=x.int+x.cap; else { outside+=x.int+x.cap; outsideN++; } });
+ const companyHas=dnewC.some(v=>v), useCompany=PP.fuente==='empresa'&&companyHas;
+ const nuevo=useCompany?dnewC:newCalc;
+ const desemb=z(); if(!PP.incluyeDesembolso) desemb[desIdx]=P.monto;
+ const si=pr.rows.find(r=>r.cat==='saldo_inicial');
+ const saldoIni=PP.saldoIni!=null?PP.saldoIni:si?(si.vals.find(v=>v)||0):(L?L.f.efectivo:0);
+ const op=z(),serv=z(),net=z(),cash=z(); let c=saldoIni;
+ for(let i=0;i<n;i++){ op[i]=ing[i]-egr[i]-imp[i]; serv[i]=dex[i]+nuevo[i]; net[i]=op[i]-inv[i]-serv[i]+fin[i]+desemb[i]-oth[i]; c+=net[i]; cash[i]=c; }
+ const per=len>=12?1:Math.max(1,Math.round(12/len)); const years=[];
+ for(let s=0;s<n;s+=per){ const e=Math.min(n,s+per); const sl=a=>a.slice(s,e).reduce((x,y)=>x+y,0);
+   const y={i:years.length,from:s,to:e-1,months:(e-s)*len,ing:sl(ing),egr:sl(egr),imp:sl(imp),op:sl(op),inv:sl(inv),dex:sl(dex),nuevo:sl(nuevo),fin:sl(fin)+sl(desemb),oth:sl(oth),net:sl(net),cashEnd:cash[e-1]};
+   y.serv=y.dex+y.nuevo; y.dscr=y.serv>0?y.op/y.serv:null; y.dscrS=y.serv>0?(y.op-y.ing*PP.estres/100)/y.serv:null; y.margen=y.ing>0&&y.serv>0?(y.op-y.serv)/y.ing:null; years.push(y); }
+ const ws=years.filter(y=>y.serv>0);
+ const yMin=ws.length?ws.reduce((a,b)=>b.dscr<a.dscr?b:a):null;
+ const cashMin=Math.min(...cash), cashMinI=cash.indexOf(cashMin);
+ let growth=null,marginP=null,marginH=null;
+ if(L&&L.hasPL&&years.length&&years[0].ing>0){ const y1=years[0]; growth=L.d.VENTAS_A>0?(y1.ing*12/y1.months)/L.d.VENTAS_A-1:null; marginP=y1.op/y1.ing; marginH=L.d.EBITDA/L.f.ventas; }
+ const s1=a=>a.slice(0,per).reduce((x,y)=>x+y,0);
+ return {n,len,H,per,labels:pr.periods.map(p=>p.label),ing,egr,imp,inv,dex,nuevo,newCalc,dnewC,fin,desemb,oth,op,serv,net,cash,years,
+   dscrMin:yMin?yMin.dscr:null,dscrMinS:ws.length?Math.min(...ws.map(y=>y.dscrS)):null,margenSeg:ws.length?Math.min(...ws.map(y=>y.margen==null?0:y.margen)):null,yMin,
+   negs:cash.filter(v=>v<0).length,cashMin,cashMinI,saldoIni,outside,outsideN,dexAdded,dexInFile,companyHas,useCompany,growth,marginP,marginH,
+   newCalcY1:s1(newCalc),companyY1:s1(dnewC),finMes:desIdx*len+(sch.length?sch[sch.length-1].mo:0)};
+}
+function projFindings(R,P,PP,L){
+ const F=[], t=state.policy.t.dscr_proy||[1.3,1];
+ if(!R.ing.some(v=>v)) F.push(['bad','No se identificaron cobros o ingresos en el flujo. Revisa la clasificación de las filas.']);
+ if(R.dscrMin!=null){ const lv=levelOf(R.dscrMin,t,true); F.push([lv==='good'?'good':lv==='mid'?'warn':'bad',`En el año más ajustado (${yearLabel(R,R.yMin)}) el flujo operativo cubre ${fmt('x',R.dscrMin)} los pagos de deuda. `+(lv==='good'?'La empresa puede pagar según su propia proyección.':lv==='mid'?'Puede pagar, pero con poca holgura.':'Su propia proyección no alcanza para pagar.')]); }
+ else F.push(['warn','La proyección no tiene pagos de deuda en el horizonte; revisa la clasificación y la columna del desembolso.']);
+ if(R.dscrMinS!=null) F.push([R.dscrMinS>=1?'info':'warn',`Si los ingresos caen ${PP.estres}% y los pagos se mantienen, el DSCR mínimo sería ${fmt('x',R.dscrMinS)}${R.dscrMinS<1?': la deuda quedaría sin cobertura':''}.`]);
+ if(R.margenSeg!=null) F.push([R.margenSeg>=0.1?'info':'warn',R.margenSeg<0?'Incluso sin caída de ingresos, algún año no cubre la deuda.':`Los ingresos pueden caer hasta ${(R.margenSeg*100).toFixed(1)}% antes de que el flujo deje de cubrir la deuda.`]);
+ if(R.negs) F.push(['bad',`La caja queda negativa en ${R.negs} ${R.negs===1?'periodo':'periodos'}; el punto más bajo es ${fm(R.cashMin)} en ${R.labels[R.cashMinI]}. La empresa necesitaría financiamiento adicional.`]);
+ if(R.outsideN>0) F.push(['warn',`La proyección cubre ${R.H} meses, pero el crédito termina en el mes ${R.finMes}: ${R.outsideN} ${R.outsideN===1?'pago':'pagos'} (${fm(R.outside)}) quedan fuera del periodo proyectado. Pida la proyección hasta el final del plazo.`]);
+ if(R.dexAdded) F.push(['warn',`El flujo no incluye los pagos de la deuda bancaria actual (${fm(L.d.deudaFin)}). Se agregaron ${fm(R.years[0]?R.years[0].dex:0)} en el primer año, estimados desde el balance con los supuestos del paso 3.`]);
+ else if(!R.dexInFile&&L&&L.d.deudaFin>0) F.push(['bad',`El flujo no incluye los pagos de la deuda bancaria actual (${fm(L.d.deudaFin)}): la cobertura está sobreestimada.`]);
+ if(R.growth!=null&&R.growth>0.25) F.push(['warn',`Los ingresos proyectados del primer año crecen ${(R.growth*100).toFixed(0)}% sobre las ventas del último ejercicio (${fm(L.d.VENTAS_A)}). Pida contratos, pedidos o preventas que respalden ese crecimiento.`]);
+ else if(R.growth!=null) F.push(['info',`Los ingresos proyectados del primer año varían ${(R.growth*100).toFixed(0)}% frente a las ventas del último ejercicio (${fm(L.d.VENTAS_A)}).`]);
+ if(R.marginP!=null&&R.marginH!=null&&R.marginP>R.marginH+0.05) F.push(['warn',`El margen operativo proyectado (${(R.marginP*100).toFixed(1)}%) supera el margen EBITDA histórico (${(R.marginH*100).toFixed(1)}%). Revise los supuestos de costos.`]);
+ if(R.companyHas){ const diff=Math.abs(R.companyY1-R.newCalcY1)>0.05*Math.max(1,R.newCalcY1);
+   F.push([diff?'warn':'info',diff?`La empresa propone pagar ${fm(R.companyY1)} del crédito en el primer año; con las condiciones del paso 3 (${fm(P.monto)} a ${P.plazo} meses al ${P.tasa}%, sistema ${SIS[P.sistema]}) corresponde pagar ${fm(R.newCalcY1)}.${R.useCompany?' El análisis usa el pago propuesto por la empresa.':''}`:`El pago propuesto por la empresa coincide con la tabla calculada (${fm(R.newCalcY1)} el primer año).`]); }
+ else F.push(['info',`El flujo de la empresa no muestra el pago del crédito solicitado; se usa la tabla calculada (sistema ${SIS[P.sistema]}, pago ${FREQ[P.frecuencia]}).`]);
+ if(!PP.incluyeDesembolso) F.push(['info',`Se sumó el desembolso de ${fm(P.monto)} a la caja en ${R.labels[Math.min(R.n-1,(PP.desembolso||1)-1)]}.`]);
+ return F;
+}
+function autoIncl(){
+ const pr=state.proj; if(!pr) return; const M=state.params.monto;
+ state.pp.incluyeDesembolso=pr.rows.some(r=>r.cat==='financiamiento'&&(/DESEMBOLSO|(CREDITO|PRESTAMO) (SOLICITADO|NUEVO)|NUEVO (CREDITO|PRESTAMO)/.test(norm(r.name))||r.vals.some(v=>M>0&&Math.abs(Math.abs(v)-M)<=0.15*M)));
+ $('#pp_incl').checked=state.pp.incluyeDesembolso;
+}
+const pillFor=lv=>lv?`<span class="pill ${lv}">${LVTXT[lv]}</span>`:'';
+function cashChart(R){
+ const W=Math.max(560,Math.min(1100,R.n*30)),H=210,pt=24,pb=34,pl=34,pr=34;
+ const vals=R.cash.concat(0); let mn=Math.min(...vals),mx=Math.max(...vals); if(mx===mn) mx=mn+1;
+ const sy=v=>pt+(mx-v)/(mx-mn)*(H-pt-pb), bw=(W-pl-pr)/R.n, step=Math.ceil(R.n/10);
+ let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:520px;display:block" role="img" aria-label="Saldo de caja proyectado por periodo">`;
+ R.cash.forEach((v,i)=>{ const x=pl+i*bw+bw*0.15, w=Math.max(2,bw*0.7), y=sy(Math.max(v,0)), hh=Math.max(1.5,Math.abs(sy(v)-sy(0)));
+   s+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${hh.toFixed(1)}" rx="2" fill="${v<0?'var(--bad)':'var(--accent)'}"><title>${esc(R.labels[i])}: ${esc(fm(v))}</title></rect>`;
+   if(i%step===0||i===R.n-1) s+=`<text x="${(x+w/2).toFixed(1)}" y="${H-12}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(R.labels[i])}</text>`; });
+ s+=`<line x1="${pl}" x2="${W-pr}" y1="${sy(0).toFixed(1)}" y2="${sy(0).toFixed(1)}" stroke="var(--fg)" stroke-opacity=".35"/>`;
+ const iMax=R.cash.indexOf(Math.max(...R.cash));
+ [R.cashMinI,iMax].filter((v,i,a)=>a.indexOf(v)===i).forEach(i=>{ const v=R.cash[i], x=pl+i*bw+bw/2, y=v<0?sy(v)+14:sy(v)-7; s+=`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--fg)">${esc(fm(v))}</text>`; });
+ return s+'</svg>';
+}
+function renderProjRows(){
+ const pr=state.proj, box=$('#projRows');
+ $('#btnProjAI').hidden=!(sampleFn&&pr&&pr.rows.length);
+ $('#btnProjRead').hidden=!(sampleFn&&imagesOK&&pr&&pr.fileBuf);
+ $('#projRowsBox').hidden=!pr||!pr.rows.length;
+ if(!pr||!pr.rows.length){ box.innerHTML=''; return; }
+ box.innerHTML=`<p class="small muted">${pr.periods.length} columnas (${esc(pr.periods[0].label)} a ${esc(pr.periods[pr.periods.length-1].label)}). Cambia la clasificación si una fila quedó mal; los cálculos se actualizan al instante.</p><div class="tscroll"><table><thead><tr><th>Fila del archivo</th><th>Clasificación</th><th class="r">Total</th></tr></thead><tbody>${pr.rows.map((r,i)=>`<tr><td>${esc(r.name)}</td><td><select id="prc${i}" data-pr="${i}" aria-label="Clasificación de ${esc(r.name)}">${PCATS.map(c=>`<option value="${c[0]}"${c[0]===r.cat?' selected':''}>${c[1]}</option>`).join('')}</select></td><td class="r num">${r.header?'—':money0.format(r.vals.reduce((a,b)=>a+b,0))}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function renderProjOut(m){
+ const el=$('#projOut'), pr=state.proj, R=m.projR;
+ if(!pr){ el.innerHTML='<p class="small muted">Sin flujo proyectado: el análisis usa solo los estados financieros históricos.</p>'; return; }
+ if(!pr.rows.length){ el.innerHTML=`<div class="alert">No se reconocieron filas y columnas de periodos en ${esc(pr.file)}. ${sampleFn&&imagesOK&&pr.fileBuf?'Usa "Leer con '+AI_NAME+'".':'Usa la plantilla de flujo.'}</div>`; return; }
+ if(!R){ el.innerHTML='<div class="alert">No se pudieron calcular los resultados; revisa la clasificación de las filas.</div>'; return; }
+ const P=m.P, PP=ppEff(), t1=m.pol.t.dscr_proy;
+ let h=pr.source==='ejemplo'?'<div class="example-note"><strong>Flujo de ejemplo.</strong> <span>Sube el flujo proyectado de la empresa para reemplazarlo.</span></div>':'';
+ h+=`<h3>¿Puede pagar según su propio flujo?</h3><div class="kpis">
+  <div class="kpi"><span class="v">${fmt('x',R.dscrMin)} ${pillFor(levelOf(R.dscrMin,t1,true))}</span><span class="l">DSCR mínimo anual${R.yMin?' · '+esc(yearLabel(R,R.yMin)):''}</span></div>
+  <div class="kpi"><span class="v">${fmt('x',R.dscrMinS)}</span><span class="l">DSCR mínimo con ingresos −${PP.estres}%</span></div>
+  <div class="kpi"><span class="v">${R.margenSeg==null?'—':(R.margenSeg*100).toFixed(1)+'%'}</span><span class="l">Caída de ingresos que soporta</span></div>
+  <div class="kpi"><span class="v" style="color:${R.cashMin<0?'var(--bad)':'var(--fg)'}">${fm(R.cashMin)}</span><span class="l">Saldo mínimo de caja · ${esc(R.labels[R.cashMinI])}</span></div></div>`;
+ const Y=R.years, row=(l,fn,cls='')=>`<tr class="${cls}"><td>${l}</td>${Y.map(y=>`<td class="r num">${fn(y)}</td>`).join('')}</tr>`;
+ h+=`<div class="tscroll"><table><thead><tr><th>Concepto</th>${Y.map(y=>`<th class="r">${esc(yearLabel(R,y))}</th>`).join('')}</tr></thead><tbody>
+  ${row('Cobros e ingresos operativos',y=>fm(y.ing))}
+  ${row('(−) Pagos operativos',y=>fm(-y.egr))}
+  ${row('(−) Impuestos',y=>fm(-y.imp))}
+  ${row('Flujo operativo',y=>fm(y.op),'tot')}
+  ${row('(−) Deuda existente'+(R.dexAdded?' (estimada del balance)':''),y=>fm(-y.dex))}
+  ${row('(−) Crédito solicitado'+(R.useCompany?' (pago propuesto)':' (tabla calculada)'),y=>fm(-y.nuevo))}
+  ${row('Servicio total de la deuda',y=>fm(y.serv),'tot')}
+  ${row('DSCR (flujo operativo / servicio)',y=>`${fmt('x',y.dscr)} ${pillFor(levelOf(y.dscr,t1,true))}`,'tot')}
+  ${row(`DSCR con ingresos −${PP.estres}%`,y=>fmt('x',y.dscrS))}
+  ${row('(−) Inversiones',y=>fm(-y.inv))}
+  ${row('(+) Desembolsos y aportes',y=>fm(y.fin))}
+  ${row('(−) Dividendos y otras salidas',y=>fm(-y.oth))}
+  ${row('Flujo neto',y=>fm(y.net),'tot')}
+  ${row('Saldo de caja al cierre',y=>fm(y.cashEnd),'tot')}
+ </tbody></table></div>`;
+ h+=`<h3>Saldo de caja por ${R.len===1?'mes':R.len===3?'trimestre':R.len===6?'semestre':'año'}</h3><div class="tscroll" style="padding:10px">${cashChart(R)}</div>`;
+ h+=`<div class="alerts">${projFindings(R,P,PP,m.L).map(f=>`<div class="alert ${f[0]==='bad'?'bad':f[0]==='warn'?'':'info'}">${esc(f[1])}</div>`).join('')}</div>`;
+ el.innerHTML=h;
+}
+async function handleProjFile(file){
+ const st=$('#projStatus'); st.textContent=`Leyendo ${file.name}…`;
+ try{
+   const ext=file.name.toLowerCase().split('.').pop();
+   const pr=ext==='pdf'?await ingestProjPdf(file):await ingestProjExcel(file);
+   if(!pr){ st.textContent=`No encontré columnas de periodos en ${file.name} (por ejemplo "Ene-2026", "Mes 1", "2026" o "Año 1"). Usa la plantilla de flujo.`; return; }
+   state.proj=pr; state.pp.len=null; $('#pp_len').value='0'; autoIncl();
+   if(pr.rows.some(r=>r.cat==='deuda_nueva')){ state.pp.fuente='calc'; $('#pp_fuente').value='calc'; }
+   st.textContent=pr.rows.length?`${file.name}: ${pr.rows.length} filas y ${pr.periods.length} columnas de ${pr.len===1?'meses':pr.len===3?'trimestres':pr.len===6?'semestres':'años'}.`:`${file.name} ${pr.scanned?'parece escaneado':'no tiene columnas de periodos reconocibles'}. ${sampleFn&&imagesOK?'Usa "Leer con '+AI_NAME+'".':'Usa la plantilla de flujo.'}`;
+ }catch(e){ st.textContent=`No se pudo leer ${file.name}: ${e&&e.message?e.message:e}`; }
+ state.memo=''; renderProjRows(); renderCalc();
+}
+async function pdfImages(buf,st){
+ const pdf=await pdfjsLib.getDocument({data:new Uint8Array(buf.slice(0))}).promise;
+ const n=Math.min(pdf.numPages,12), blobs=[];
+ for(let p=1;p<=n;p++){
+   st.textContent=`Preparando página ${p} de ${n}…`;
+   const page=await pdf.getPage(p); const vp0=page.getViewport({scale:1}); const vp=page.getViewport({scale:Math.min(2.2,1500/vp0.width)});
+   const cv=document.createElement('canvas'); cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+   const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+   await page.render({canvasContext:ctx,viewport:vp}).promise;
+   blobs.push(await new Promise(r=>cv.toBlob(r,'image/jpeg',0.88)));
+ }
+ return blobs;
+}
+async function aiProjClassify(btn){
+ const pr=state.proj; if(!sampleFn||!pr||!pr.rows.length) return;
+ const st=$('#projStatus'); btn.disabled=true; st.textContent=''+AI_NAME+' está clasificando las filas del flujo…';
+ const lines=pr.rows.slice(0,400).map((r,i)=>`${i}|${String(r.name).slice(0,90)}|${r.header?'título':Math.round(r.vals.reduce((a,b)=>a+b,0))}|${r.vals.slice(0,4).map(v=>Math.round(v)).join(';')}`).join('\n');
+ const prompt=`Eres analista de crédito en Ecuador. Estas son las filas, en orden, de un flujo de caja proyectado que presenta una empresa que solicita un crédito de ${fm(state.params.monto)}. Formato: índice|concepto|total|primeros valores. Las filas "título" indican la sección de las filas siguientes.
+
+Asigna a cada fila una categoría:
+${PCATS.map(c=>c[0]+': '+c[1]).join('\n')}
+
+Reglas: no dupliques (si hay detalle, los totales y subtotales van en omitir; usa tot_ing o tot_egr solo si no hay detalle). Pagos de capital o intereses de préstamos ya existentes: deuda_existente. Cuotas del crédito que se está solicitando: deuda_nueva. Desembolsos de préstamos y aportes de socios: financiamiento. Saldos finales, flujos netos y acumulados: omitir.
+
+Responde solo con JSON: {"m":[[indice,"categoria"],...]}
+
+Filas:
+${lines}`;
+ try{
+   const res=await sampleFn.json(prompt,{modelTier:'default'}); const arr=res&&Array.isArray(res.m)?res.m:null; if(!arr) throw {code:'invalid_json'};
+   let k=0; arr.forEach(x=>{ if(Array.isArray(x)&&PCK[x[1]]&&pr.rows[+x[0]]){ pr.rows[+x[0]].cat=x[1]; k++; } }); if(!k) throw {code:'empty'};
+   autoIncl(); st.textContent=`${AI_NAME} clasificó ${k} filas. Revisa la clasificación de las filas.`; renderProjRows(); renderCalc();
+ }catch(e){ st.textContent=aiErr(e,'clasificar el flujo'); }
+ btn.disabled=false;
+}
+async function aiProjRead(btn){
+ const pr=state.proj; if(!sampleFn||!pr||!pr.fileBuf) return;
+ const st=$('#projStatus'); btn.disabled=true;
+ try{
+   const blobs=await pdfImages(pr.fileBuf,st); let periods=null; const rows=[];
+   for(let i=0;i<blobs.length;i+=maxImgs){
+     const chunk=blobs.slice(i,i+maxImgs); st.textContent=`${AI_NAME} está leyendo las páginas ${i+1} a ${i+chunk.length}…`;
+     const res=await sampleFn.json(`Estas imágenes son páginas de un flujo de caja proyectado que presenta una empresa ecuatoriana para pedir un crédito. Transcribe la tabla sin inventar nada: los nombres de los periodos (columnas, sin columnas de totales) y cada fila con sus valores por periodo, con signo, usando 0 si la celda está vacía. Las filas de título llevan una lista vacía.
+Responde solo con JSON: {"periodos":["Ene-2026",...],"filas":[["concepto",[v1,v2,...]],...]}`,{images:chunk,modelTier:'default'});
+     if(res&&Array.isArray(res.periodos)&&res.periodos.length&&!periods) periods=res.periodos.map(l=>Object.assign({t:'m'},parsePeriod(String(l))||{},{label:String(l)}));
+     if(res&&Array.isArray(res.filas)) res.filas.forEach(f=>{ if(Array.isArray(f)&&f[0]) rows.push({name:String(f[0]),raw:Array.isArray(f[1])?f[1]:[]}); });
+   }
+   if(!periods||!rows.length) throw {code:'empty'};
+   const prn=makeProj(pr.file,'pdf',periods,rows.map(r=>{ const vals=periods.map((_,i)=>{ const v=typeof r.raw[i]==='number'?r.raw[i]:parseNum(r.raw[i]); return isNaN(v)?0:v; }); return {name:r.name,vals,header:!r.raw.length,tipo:''}; }),{fileBuf:pr.fileBuf});
+   state.proj=prn; autoIncl(); st.textContent=`${AI_NAME} leyó ${prn.rows.length} filas y ${periods.length} columnas.`; renderProjRows(); renderCalc();
+ }catch(e){ st.textContent=aiErr(e,'leer el flujo'); }
+ btn.disabled=false;
+}
+function loadExampleProj(){
+ state.proj=makeProj('Ejemplo','ejemplo',[{t:'y',year:2026,label:'2026'},{t:'y',year:2027,label:'2027'},{t:'y',year:2028,label:'2028'}],[
+  {name:'Saldo inicial de caja',vals:[95000,0,0]},
+  {name:'INGRESOS',vals:[0,0,0],header:true},
+  {name:'Cobro de planillas de obra',vals:[1650000,1800000,1950000]},
+  {name:'Preventas y anticipos de clientes',vals:[550000,600000,650000]},
+  {name:'Total ingresos',vals:[2200000,2400000,2600000]},
+  {name:'EGRESOS',vals:[0,0,0],header:true},
+  {name:'Materiales y suministros',vals:[-980000,-1060000,-1140000]},
+  {name:'Subcontratos y mano de obra',vals:[-620000,-680000,-740000]},
+  {name:'Sueldos y beneficios',vals:[-120000,-125000,-130000]},
+  {name:'Gastos administrativos',vals:[-80000,-85000,-90000]},
+  {name:'Impuesto a la renta y participación trabajadores',vals:[-55000,-60000,-65000]},
+  {name:'Compra de maquinaria',vals:[-30000,0,-20000]},
+  {name:'Pago de préstamos bancarios actuales',vals:[-220000,-190000,-170000]},
+  {name:'Cuota del crédito solicitado',vals:[-60000,-60000,-60000]},
+  {name:'Desembolso del crédito solicitado',vals:[150000,0,0]},
+  {name:'Dividendos',vals:[0,-30000,-40000]},
+  {name:'Saldo final de caja',vals:[0,0,0]},
+ ]);
+ state.pp=Object.assign({},DEF_PP); autoIncl();
+}
+function exportProjTemplate(){
+ if(!window.XLSX) return;
+ const now=new Date(); const labels=[];
+ for(let i=1;i<=24;i++){ const d=new Date(now.getFullYear(),now.getMonth()+i,1); labels.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); }
+ const aoa=[['Concepto','Tipo',...labels],['Saldo inicial de caja','saldo_inicial'],['INGRESOS',''],['Cobros por ventas o planillas de obra','ingresos'],['Anticipos y preventas de clientes','ingresos'],['Otros ingresos operativos','ingresos'],['EGRESOS OPERATIVOS',''],['Pagos a proveedores y materiales','egresos'],['Mano de obra y subcontratos','egresos'],['Sueldos y beneficios sociales','egresos'],['Gastos administrativos y de ventas','egresos'],['Impuestos (IVA, renta, participación trabajadores)','impuestos'],['INVERSIONES',''],['Compra de activos fijos','inversiones'],['FINANCIAMIENTO',''],['Desembolso del crédito solicitado','financiamiento'],['Aportes de socios','financiamiento'],['Pago de deuda bancaria existente (capital e intereses)','deuda_existente'],['Pago propuesto del crédito solicitado','deuda_nueva'],['Dividendos y retiros de socios','otros_salidas'],[],['Las salidas pueden ir con signo positivo o negativo. Las columnas pueden ser meses (2026-01), años (2026) o "Año 1". La columna Tipo indica cómo se usa cada fila.']];
+ const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:52},{wch:16},...labels.map(()=>({wch:12}))];
+ const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'FLUJO PROYECTADO');
+ saveFile('Plantilla_flujo_proyectado.xlsx',new Blob([XLSX.write(wb,{type:'array',bookType:'xlsx'})]));
+}
+
+/* ---------- CAPM, WACC y valor ---------- */
+const pc=x=>x==null||!isFinite(x)?'—':(x*100).toFixed(1)+'%';
+function synthSpread(cov){ const T=[[12.5,.006],[9.5,.008],[7.5,.01],[6,.012],[4.5,.015],[4,.018],[3.5,.022],[3,.026],[2.5,.035],[2,.045],[1.5,.06],[1.25,.08],[0.8,.10],[0.5,.13]]; for(const [c,s] of T) if(cov>=c) return s; return .17; }
+function computeVal(L,P){
+ if(!L||!L.hasPL) return {err:'Se necesitan el balance y el estado de resultados del último periodo para calcular el costo de capital.'};
+ const d=L.d, V=state.val, t=V.tax/100, bu=V.bu!=null?V.bu:(BU[state.sector]||0.9);
+ const E=d.PAT;
+ if(E<=0) return {err:'El patrimonio es negativo o nulo: no se puede calcular el costo del patrimonio, y endeudarse más no es recomendable.'};
+ const rf=V.rf/100, erp=V.erp/100, crp=V.crp/100, sz=V.size/100, tasa=P.tasa/100;
+ const D0=d.deudaFin, cash=d.f.efectivo, EBIT=d.EBIT_A;
+ const kdAuto=D0>0&&d.GF_A>0?d.GF_A/D0:tasa, Kd0=V.kd!=null?V.kd/100:kdAuto;
+ const ke=b=>rf+b*erp+crp+sz, bL=De=>bu*(1+(1-t)*De);
+ const M=P.monto, ref=P.refinancia?Math.min(M,d.f.deuda_cp):0, D1=D0-ref+M;
+ const Kd1=D1>0?(Kd0*(D0-ref)+tasa*M)/D1:0;
+ const b0=bL(D0/E), b1=bL(D1/E), Ke0=ke(b0), Ke1=ke(b1);
+ const w0=D0/(D0+E), w1=D1/(D1+E);
+ const W0=(1-w0)*Ke0+w0*Kd0*(1-t), W1=(1-w1)*Ke1+w1*Kd1*(1-t);
+ const IC0=Math.max(1,D0+E-cash), newMoney=M-ref, IC1=IC0+newMoney;
+ const rp=V.rp!=null?V.rp/100:EBIT/IC0, dEBIT=newMoney*rp;
+ const ROIC0=EBIT*(1-t)/IC0, ROIC1=(EBIT+dEBIT)*(1-t)/IC1;
+ const EVA0=(ROIC0-W0)*IC0, EVA1=(ROIC1-W1)*IC1;
+ const dInt=ref*(tasa-Kd0)+newMoney*tasa;
+ const ROE0=d.UN_A/E, ROE1=(d.UN_A+(dEBIT-dInt)*(1-t))/E;
+ // Curva del WACC (recapitalización con capital total constante; costo de deuda sintético por cobertura de intereses, calibrado al costo actual)
+ const V0=D0+E;
+ const synth=w=>{ const D=w*V0; if(D<=0) return rf+crp+synthSpread(99); let kd=rf+crp+.03; for(let i=0;i<30;i++){ const n=rf+crp+synthSpread(EBIT/(kd*D)); if(Math.abs(n-kd)<1e-6) break; kd=n; } return kd; };
+ const off=D0>0?Kd0-synth(w0):0;
+ const curve=[];
+ for(let i=0;i<=18;i++){ const w=i*0.05, D=w*V0, Eq=V0-D; if(Eq<=0) break; const kd=Math.max(rf,synth(w)+off), k=ke(bu*(1+(1-t)*D/Eq)); curve.push({w,ke:k,kd:kd*(1-t),wacc:(1-w)*k+w*kd*(1-t)}); }
+ const opt=curve.reduce((a,b)=>b.wacc<a.wacc?b:a);
+ // Conclusión
+ const dscrPro=d.pro?d.pro.dscrPro:null;
+ const overOpt=w1>opt.w+0.05, spreadOK=V.rp==null||rp>tasa, evaUp=EVA1>EVA0;
+ let ver='NO'; if(evaUp&&spreadOK&&!overOpt&&!(dscrPro!=null&&dscrPro<1)) ver='SI'; else if(evaUp) ver='CONDICIONADO';
+ const cond=[];
+ if(overOpt) cond.push(`la deuda quedaría en ${pc(w1)} del capital, por encima del nivel que minimiza el WACC (cerca de ${pc(opt.w)})`);
+ if(!spreadOK) cond.push(`la inversión rinde ${pc(rp)}, menos que la tasa del crédito (${P.tasa}%)`);
+ if(dscrPro!=null&&dscrPro<1) cond.push(`el flujo actual no alcanza para pagar la deuda (DSCR ${fmt('x',dscrPro)})`);
+ const resumen= ver==='SI'?`El crédito aumenta el valor económico de la empresa: el EVA pasa de ${fm(EVA0)} a ${fm(EVA1)} al año y el WACC queda en ${pc(W1)}, por debajo del rendimiento del negocio (${pc(ROIC1)}).`
+   : ver==='CONDICIONADO'?`El EVA mejora (de ${fm(EVA0)} a ${fm(EVA1)} al año), pero ${cond.join('; ')}.`
+   : `El crédito no crea valor: el EVA pasa de ${fm(EVA0)} a ${fm(EVA1)} al año. ${ROIC1<W1?`El negocio rendiría ${pc(ROIC1)} sobre su capital mientras el capital cuesta ${pc(W1)}.`:''}${cond.length?' Además, '+cond.join('; ')+'.':''}`;
+ const notas=[];
+ notas.push(`Hoy el negocio rinde ${pc(ROIC0)} sobre el capital invertido (${fm(IC0)}) y su capital cuesta ${pc(W0)}: ${ROIC0>=W0?'crea':'destruye'} ${fm(Math.abs(EVA0))} de valor al año.`);
+ notas.push(`Por el riesgo que asumen, los socios deberían exigir ${pc(Ke0)} anual (CAPM con beta apalancada ${b0.toFixed(2)}, riesgo país ${V.crp}% y prima por tamaño ${V.size}%). Con el crédito la beta sube a ${b1.toFixed(2)} y el costo del patrimonio a ${pc(Ke1)}.`);
+ notas.push(`La deuda actual cuesta ${pc(Kd0)}${V.kd==null?' (intereses pagados / deuda financiera)':''}, ${pc(Kd0*(1-t))} después del escudo fiscal. El nuevo crédito al ${P.tasa}% cuesta ${pc(tasa*(1-t))} después de impuestos.`);
+ if(newMoney>0) notas.push(`La inversión financiada rinde ${pc(rp)} antes de impuestos (${V.rp==null?'supuesto: igual que el negocio actual; ingresa la TIR del proyecto para afinarlo':'dato ingresado'}) frente a una tasa de ${P.tasa}%: ${rp>tasa?'cada dólar prestado deja ganancia al socio':'el crédito cuesta más de lo que rinde la inversión'}.`);
+ if(ref>0) notas.push(`Al refinanciar ${fm(ref)} de deuda al ${P.tasa}% en lugar del ${pc(Kd0)} actual, los intereses ${tasa<Kd0?'bajan':'suben'} ${fm(Math.abs(ref*(tasa-Kd0)))} al año.`);
+ notas.push(`La deuda pasa de ${pc(w0)} a ${pc(w1)} del capital. El nivel que minimiza el WACC está cerca de ${pc(opt.w)} (WACC ${pc(opt.wacc)})${w0>opt.w+0.05?'; la empresa ya está por encima de ese nivel':''}. Ese óptimo no incluye el costo de una crisis de liquidez: con deuda alta, el límite real lo pone la capacidad de pago (DSCR).`);
+ notas.push(`La rentabilidad del socio (ROE) pasa de ${pc(ROE0)} a ${pc(ROE1)}${ROE1>ROE0?': el apalancamiento le favorece':': el apalancamiento le resta rentabilidad'}.`);
+ if(d.impEst) notas.push('La utilidad incluye participación e impuesto a la renta estimados porque no estaban registrados.');
+ const tabla=[['Tasa libre de riesgo','p',rf,rf],['Beta desapalancada del sector','x',bu,bu],['Deuda financiera / patrimonio','x',D0/E,D1/E],['Beta apalancada (Hamada)','x',b0,b1],['Prima de riesgo de mercado','p',erp,erp],['Riesgo país','p',crp,crp],['Prima por tamaño','p',sz,sz],['Costo del patrimonio, Ke (CAPM)','p',Ke0,Ke1],['Costo de la deuda, Kd','p',Kd0,Kd1],['Kd después de impuestos','p',Kd0*(1-t),Kd1*(1-t)],['Peso del patrimonio, E/V','p',1-w0,1-w1],['Peso de la deuda, D/V','p',w0,w1],['WACC','p',W0,W1],['Capital invertido','$',IC0,IC1],['ROIC (EBIT × (1 − t) / capital invertido)','p',ROIC0,ROIC1],['EVA anual ((ROIC − WACC) × capital)','$',EVA0,EVA1],['ROE (utilidad neta / patrimonio)','p',ROE0,ROE1]];
+ return {ver,resumen,notas,tabla,curve,opt,w0,w1,W0,W1,Ke0,Ke1,Kd0,Kd1,ROIC0,ROIC1,EVA0,EVA1,ROE0,ROE1,b0,b1,bu,t};
+}
+const VER_TXT={SI:'Conviene endeudarse',CONDICIONADO:'Conviene solo con condiciones',NO:'No conviene endeudarse'};
+const fmtV=(u,v)=>u==='p'?pc(v):u==='$'?fm(v):(v==null||!isFinite(v)?'—':v.toFixed(2));
+function waccChart(v){
+ const W=640,H=270,pl=48,pr=18,pt=18,pb=44, pts=v.curve;
+ const ys=pts.flatMap(p=>[p.wacc,p.kd,Math.min(p.ke,0.6)]).concat([v.W0,v.W1]);
+ const stp=Math.max(...ys)-Math.min(...ys)>0.3?0.1:0.05;
+ let mn=Math.max(0,Math.floor(Math.min(...ys)/stp)*stp), mx=Math.ceil(Math.max(...ys)/stp)*stp; if(mx<=mn) mx=mn+stp;
+ const nT=Math.round((mx-mn)/stp);
+ const xm=Math.max(0.9,Math.min(0.95,Math.max(v.w0,v.w1)+0.02));
+ const sx=w=>pl+Math.min(w,xm)/xm*(W-pl-pr), sy=y=>pt+(mx-Math.min(Math.max(y,mn),mx))/(mx-mn)*(H-pt-pb);
+ let s=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:520px;display:block" role="img" aria-label="Costo de capital según el nivel de deuda">`;
+ for(let i=0;i<=nT;i++){ const y=mn+stp*i; s+=`<line x1="${pl}" x2="${W-pr}" y1="${sy(y).toFixed(1)}" y2="${sy(y).toFixed(1)}" stroke="var(--line)"/><text x="${pl-6}" y="${(sy(y)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--muted)">${(y*100).toFixed(0)}%</text>`; }
+ for(let w=0;w<=0.9001;w+=0.1){ s+=`<text x="${sx(w).toFixed(1)}" y="${H-24}" text-anchor="middle" font-size="11" fill="var(--muted)">${Math.round(w*100)}%</text>`; }
+ s+=`<text x="${((pl+W-pr)/2).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--muted)">Deuda / (deuda + patrimonio)</text>`;
+ const line=(k,col,wd,dash)=>`<polyline fill="none" stroke="${col}" stroke-width="${wd}" stroke-linejoin="round" ${dash?'stroke-dasharray="5 4"':''} points="${pts.map(p=>sx(p.w).toFixed(1)+','+sy(p[k]).toFixed(1)).join(' ')}"/>`;
+ s+=line('ke','var(--warn)',1.5)+line('kd','var(--muted)',1.5,true)+line('wacc','var(--accent)',3);
+ const mk=(w,y,fill,label)=>`<circle cx="${sx(w).toFixed(1)}" cy="${sy(y).toFixed(1)}" r="6" fill="${fill}" stroke="var(--surface)" stroke-width="2"><title>${label}: deuda ${pc(w)}, WACC ${pc(y)}</title></circle>`;
+ s+=mk(v.opt.w,v.opt.wacc,'var(--good)','Óptimo')+(Math.abs(v.w1-v.w0)>0.005?mk(v.w1,v.W1,'var(--bad)','Con el crédito'):'')+mk(v.w0,v.W0,'var(--fg)','Hoy');
+ return s+'</svg>';
+}
+function renderVal(m){
+ const el=$('#valOut'), v=m.val;
+ $('#v_bu').placeholder=`${BU[state.sector]||0.9} (sector)`;
+ if(!v||v.err){ el.innerHTML=`<div class="alert info">${esc(v?v.err:'Carga los estados financieros.')}</div>`; return; }
+ const col=v.ver==='SI'?'var(--good)':v.ver==='CONDICIONADO'?'var(--warn)':'var(--bad)';
+ const ar=(a,b,f)=>`${f(a)} → <strong>${f(b)}</strong>`;
+ let h=`<div class="owner"><span class="eyebrow">Conclusión para los dueños · ${esc(state.empresa||'Empresa')}</span><div class="decision" style="color:${col}">${VER_TXT[v.ver]}</div><p>${esc(v.resumen)}</p></div>`;
+ h+=`<div class="kpis">
+  <div class="kpi"><span class="v">${ar(v.W0,v.W1,pc)}</span><span class="l">WACC: hoy → con el crédito</span></div>
+  <div class="kpi"><span class="v">${ar(v.ROIC0,v.ROIC1,pc)}</span><span class="l">ROIC: rendimiento del capital invertido</span></div>
+  <div class="kpi"><span class="v">${ar(v.EVA0,v.EVA1,fm)}</span><span class="l">Valor económico creado al año (EVA)</span></div>
+  <div class="kpi"><span class="v">${ar(v.ROE0,v.ROE1,pc)}</span><span class="l">Rentabilidad del socio (ROE)</span></div></div>`;
+ const dot=c=>`<i style="background:${c};width:10px;height:10px;border-radius:50%;vertical-align:-1px"></i>`;
+ h+=`<div style="display:grid;gap:10px;min-width:0"><h3>Costo de capital según el nivel de deuda</h3><div class="tscroll" style="padding:10px">${waccChart(v)}</div>
+  <div class="vlegend"><span><i style="background:var(--accent);height:4px"></i>WACC</span><span><i style="background:var(--warn)"></i>Costo del patrimonio (Ke)</span><span><i style="background:var(--muted)"></i>Costo de la deuda después de impuestos</span><span>${dot('var(--fg)')}Hoy: deuda ${pc(v.w0)}, WACC ${pc(v.W0)}</span><span>${dot('var(--bad)')}Con el crédito: ${pc(v.w1)}, ${pc(v.W1)}</span><span>${dot('var(--good)')}Mínimo WACC: ${pc(v.opt.w)}, ${pc(v.opt.wacc)}</span></div>
+  <p class="small muted">El costo de la deuda sube a medida que la cobertura de intereses cae (escala de calificación sintética tipo Damodaran, ajustada al costo actual de la empresa).</p></div>`;
+ h+=`<div class="grid2"><div style="display:grid;gap:10px;align-content:start;min-width:0"><h3>Lectura para los socios</h3><ul class="list">${v.notas.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>
+  <div style="display:grid;gap:10px;align-content:start;min-width:0"><h3>Cálculo paso a paso</h3><div class="tscroll"><table><thead><tr><th>Concepto</th><th class="r">Hoy</th><th class="r">Con el crédito</th></tr></thead><tbody>${v.tabla.map(r=>`<tr class="${/^(WACC|Costo del patrimonio|EVA)/.test(r[0])?'tot':''}"><td>${esc(r[0])}</td><td class="r num">${fmtV(r[1],r[2])}</td><td class="r num">${fmtV(r[1],r[3])}</td></tr>`).join('')}</tbody></table></div></div></div>`;
+ el.innerHTML=h;
+}
+
+/* ---------- Render general ---------- */
+let lastModel=null;
+function renderAll(){ state.docs.forEach(d=>{ if(!d.agg) d.agg=aggregate(d); }); renderDocs(); renderProjRows(); const m=compute(); lastModel=m; renderData(m); renderResults(m); renderProjOut(m); renderVal(m); }
+function renderCalc(){ const m=compute(); lastModel=m; renderResults(m); renderProjOut(m); renderVal(m); }
+
+/* ---------- Carga de archivos ---------- */
+async function handleFiles(files){
+ const st=$('#docStatus'); const list=[...files]; if(!list.length) return;
+ if(state.example){ state.docs=[]; state.overrides={}; state.example=false; state.empresa=''; if(state.proj&&state.proj.source==='ejemplo'){ state.proj=null; state.pp=Object.assign({},DEF_PP); renderParams(); } }
+ for(const file of list){
+   st.textContent=`Leyendo ${file.name}…`;
+   try{
+     const ext=file.name.toLowerCase().split('.').pop();
+     const docs=ext==='pdf'?await ingestPdf(file):await ingestExcel(file);
+     if(!docs.length){ st.textContent=`No encontré cuentas con valores en ${file.name}. Use la plantilla Excel o "Leer con ${AI_NAME}".`; continue; }
+     docs.forEach(d=>{ d.agg=d.scanned?null:aggregate(d); state.docs.push(d); if(!state.empresa&&d.empresa) state.empresa=d.empresa; });
+     const sc=docs.some(d=>d.scanned);
+     st.textContent=sc?`${file.name} parece escaneado (sin texto). ${sampleFn&&imagesOK?'Usa "Leer con '+AI_NAME+'" para extraer las cuentas.':'Para leerlo se necesita abrir esta página en claude.ai.'}`:`${file.name}: ${docs.reduce((a,d)=>a+(d.rows?d.rows.length:Object.keys(d.fields||{}).length),0)} líneas leídas.`;
+   }catch(e){ st.textContent=`No se pudo leer ${file.name}: ${e&&e.message?e.message:e}`; }
+ }
+ $('#empresa').value=state.empresa; state.memo=''; $('#memo').hidden=true;
+ renderAll();
+}
+
+/* ---------- Claude ---------- */
+let sampleFn=null, dlApi=null, imagesOK=false, maxImgs=1;
+const CAT_HELP=`efectivo: caja, bancos y equivalentes
+inversiones_cp: inversiones temporales
+cxc_clientes: cuentas por cobrar comerciales a clientes (con su provisión de incobrables)
+otras_cxc: otras cuentas por cobrar (empleados, socios, relacionadas)
+inventarios: inventarios, mercadería, materiales, obras y proyectos en curso
+impuestos_ac: crédito tributario, IVA, retenciones, anticipo de impuesto a la renta
+otros_ac: anticipos a proveedores, pagos anticipados y otros activos corrientes
+ppe_neto: propiedad, planta y equipo, incluida la depreciación acumulada
+otros_anc: otros activos no corrientes
+deuda_cp: préstamos, tarjetas y obligaciones con bancos o instituciones financieras a corto plazo
+proveedores: proveedores y cuentas por pagar comerciales
+laborales_fiscales: sueldos, beneficios sociales, IESS, participación trabajadores, impuestos y SRI por pagar
+anticipos_clientes: anticipos recibidos de clientes
+otros_pc: otras cuentas por pagar de corto plazo (socios, relacionadas, dividendos, varios)
+deuda_lp: obligaciones financieras de largo plazo
+otros_pnc: otros pasivos no corrientes (jubilación patronal, desahucio, socios a largo plazo)
+capital: capital social y aportes
+reservas: reservas, superávit y otros resultados integrales
+resultados_acum: resultados acumulados de ejercicios anteriores
+resultado_ejercicio: utilidad o pérdida del ejercicio
+ventas: ingresos de actividades ordinarias
+otros_ingresos: ingresos financieros y no operacionales
+costo_ventas: costo de ventas, de producción o de obra
+gastos_op: gastos de administración y ventas (sin depreciación ni intereses)
+dep_amort: depreciaciones y amortizaciones
+gastos_fin: intereses y gastos financieros
+participacion: 15% participación trabajadores
+impuesto_renta: impuesto a la renta`;
+async function aiClassify(doc,btn){
+ if(!sampleFn||!doc.rows) return;
+ const st=$('#docStatus'); btn.disabled=true; st.textContent=''+AI_NAME+' está clasificando las cuentas…';
+ const dotted=doc.rows.some(r=>r.code&&r.code.includes('.'));
+ const keys=doc.rows.map(r=>r.code?String(r.code).replace(/\.+$/,''):'');
+ const isLeaf=keys.map((k,i)=>!k||!keys.some((o,j)=>j!==i&&o&&(dotted?o.startsWith(k+'.'):(o.startsWith(k)&&o.length>k.length))));
+ const lines=doc.rows.slice(0,1200).map((r,i)=>`${i}|${r.code||''}|${String(r.name).slice(0,90)}|${r.amount}|${isLeaf[i]?'H':'T'}`).join('\n');
+ const prompt=`Eres analista de crédito en Ecuador (NIIF, US$). Estas son las líneas de un estado financiero (${DOC_TYPES(doc.agg)||'balance y/o resultados'}) con el formato: índice|código|cuenta|valor|H (cuenta sin subcuentas) o T (título o subtotal).
+
+Asigna cada línea que deba sumarse a UNA de estas categorías:
+${CAT_HELP}
+
+Reglas:
+- No dupliques: si incluyes una cuenta de detalle, no incluyas su subtotal. Normalmente usa las líneas H.
+- Si una línea sin código es el único dato de ingresos (por ejemplo "Income" o "Ventas"), asígnala a ventas.
+- Omite totales generales, títulos y la utilidad del ejercicio del estado de resultados.
+- No cambies signos; solo clasifica.
+
+Responde solo con JSON: {"m":[[indice,"categoria"],...]}
+
+Líneas:
+${lines}`;
+ try{
+   const res=await sampleFn.json(prompt,{modelTier:'default'});
+   const arr=res&&Array.isArray(res.m)?res.m:null; if(!arr) throw {code:'invalid_json'};
+   const ai={}; arr.forEach(x=>{ if(Array.isArray(x)&&FK[x[1]]&&doc.rows[+x[0]]) ai[+x[0]]=x[1]; });
+   if(!Object.keys(ai).length) throw {code:'empty'};
+   doc.ai=ai; doc.agg=aggregate(doc); st.textContent=`${AI_NAME} clasificó ${Object.keys(ai).length} cuentas de ${doc.label}. Revisa el paso 2.`;
+   renderAll();
+ }catch(e){ st.textContent=aiErr(e,'clasificar'); btn.disabled=false; }
+}
+function aiErr(e,what){
+ const c=e&&e.code;
+ if((c==='not_granted'||c==='sampling_disabled')&&AI_NAME==='Gemini') return 'Google rechazó la clave de Gemini. Revísala o pega una nueva en el paso 1.';
+ if(c==='rate_limited'&&AI_NAME==='Gemini') return 'Se alcanzó el límite gratuito de Gemini (por minuto o por día). Espera un momento e intenta de nuevo.';
+ if(c==='not_granted'||c==='sampling_disabled') return HOST==='web'?'El servidor rechazó la solicitud: revisa el código de acceso o la clave de Anthropic configurada.':''+AI_NAME+' no tiene permiso en esta página. Puedes habilitarlo desde el menú de permisos del artefacto.';
+ if(c==='refused') return `${AI_NAME} no pudo ${what} con este contenido.`;
+ if(c==='rate_limited') return 'Se alcanzó el límite de uso de '+AI_NAME+'. Intenta de nuevo en unos minutos.';
+ if(c==='invalid_json'||c==='empty') return `${AI_NAME} no devolvió un resultado válido al ${what}. Intenta de nuevo.`;
+ if(c==='cancelled') return 'Detenido.';
+ return `No se pudo ${what} con ${AI_NAME} (${c||'error'}). Intenta de nuevo.`;
+}
+async function aiRead(doc,btn){
+ if(!sampleFn||!doc.fileBuf) return;
+ const st=$('#docStatus'); btn.disabled=true;
+ try{
+   const blobs=await pdfImages(doc.fileBuf,st);
+   const all=[]; let meta={};
+   for(let i=0;i<blobs.length;i+=maxImgs){
+     const chunk=blobs.slice(i,i+maxImgs);
+     st.textContent=`${AI_NAME} está leyendo las páginas ${i+1} a ${i+chunk.length}…`;
+     const prompt=`Estas imágenes son páginas ${i+1} a ${i+chunk.length} de un estado financiero de una empresa ecuatoriana (balance general y/o estado de resultados). Transcribe TODAS las líneas de cuentas con su valor, en el orden en que aparecen, sin inventar nada. Si hay varias columnas de valores (por ejemplo dos años), usa la columna del periodo más reciente.
+Responde solo con JSON: {"empresa":"razón social o vacío","fecha_corte":"AAAA-MM-DD o vacío","desde":"AAAA-MM-DD o vacío","filas":[["código o vacío","nombre de la cuenta",valor numérico con signo],...]}`;
+     const res=await sampleFn.json(prompt,{images:chunk,modelTier:'default'});
+     if(res&&Array.isArray(res.filas)) res.filas.forEach(f=>{ if(Array.isArray(f)&&f.length>=3){ const v=typeof f[2]==='number'?f[2]:parseNum(f[2]); if(!isNaN(v)) all.push({code:String(f[0]||'').trim(),name:String(f[1]||'').trim(),amount:v}); } });
+     if(res&&!meta.fecha_corte&&res.fecha_corte) meta=res;
+   }
+   if(!all.length) throw {code:'empty'};
+   doc.rows=all; doc.scanned=false; doc.ai=null;
+   if(meta.fecha_corte&&/^\d{4}-\d{2}-\d{2}$/.test(meta.fecha_corte)) doc.fecha=meta.fecha_corte;
+   if(meta.desde&&doc.fecha&&/^\d{4}-\d{2}-\d{2}$/.test(meta.desde)){ const [y1,m1]=meta.desde.split('-').map(Number),[y2,m2]=doc.fecha.split('-').map(Number); const mm=(y2-y1)*12+(m2-m1)+1; if(mm>=1&&mm<=24) doc.meses=mm; }
+   if(meta.empresa&&!state.empresa) state.empresa=meta.empresa;
+   doc.agg=aggregate(doc);
+   st.textContent=`${AI_NAME} leyó ${all.length} líneas de ${doc.label}.`;
+   $('#empresa').value=state.empresa; renderAll();
+ }catch(e){ st.textContent=aiErr(e,'leer el documento'); btn.disabled=false; }
+}
+let memoCtl=null;
+function summaryForAI(m){
+ const L=m.L, li=m.periods.indexOf(L), d=L.d;
+ const ind={}; IND.forEach(i=>{ ind[i.l]=m.periods.map((p,j)=>({fecha:p.fecha,valor:fmt(i.u,m.vals[i.k][j])})).filter(x=>x.valor!=='—'); const lv=levelOf(m.vals[i.k][li],m.pol.t[i.k],i.hb); if(lv) ind[i.l].push({evaluacion:LVTXT[lv]}); });
+ return {empresa:state.empresa,sector:$('#sector').selectedOptions[0].textContent,moneda:'US$',
+   credito:{monto:P0(m.P.monto),plazo_meses:m.P.plazo,tasa_anual:m.P.tasa+'%',refinancia_deuda:m.P.refinancia,garantia:P0(m.P.garantia),primera_cuota:P0(d.pro&&d.pro.cuota),sistema:SIS[m.P.sistema],frecuencia_pago:FREQ[m.P.frecuencia],gracia_meses:m.P.gracia},
+   valor_para_los_duenos:m.val&&!m.val.err?{conclusion:VER_TXT[m.val.ver],resumen:m.val.resumen,calculo:Object.fromEntries(m.val.tabla.map(r=>[r[0],{hoy:fmtV(r[1],r[2]),con_credito:fmtV(r[1],r[3])}])),nivel_deuda_optimo:pc(m.val.opt.w),lectura:m.val.notas,supuestos_mercado:state.val}:(m.val?m.val.err:null),
+   flujo_proyectado_empresa:m.projR?{horizonte_meses:m.projR.H,por_anio:m.projR.years.map(y=>({anio:yearLabel(m.projR,y),ingresos:P0(y.ing),flujo_operativo:P0(y.op),deuda_existente:P0(y.dex),credito_solicitado:P0(y.nuevo),dscr:y.dscr==null?null:+y.dscr.toFixed(2),caja_al_cierre:P0(y.cashEnd)})),dscr_minimo:m.projR.dscrMin,dscr_minimo_estres:m.projR.dscrMinS,estres_caida_ingresos:ppEff().estres+'%',caida_ingresos_tolerable:m.projR.margenSeg,saldo_minimo_caja:P0(m.projR.cashMin),hallazgos:projFindings(m.projR,m.P,ppEff(),L).map(x=>x[1])}:'No presentado',
+   decision_modelo:DEC_TXT[m.decision],puntaje:m.score,puntaje_por_categoria:Object.fromEntries(Object.keys(CATS).map(c=>[CATS[c],m.catScores[c]])),
+   motivos_rechazo:m.ko,pendientes:m.why,
+   estados:m.periods.map(p=>({fecha:p.fecha,meses:p.meses,activo:P0(p.d.AT),pasivo:P0(p.d.PT),patrimonio:P0(p.d.PAT),deuda_financiera:P0(p.d.deudaFin),ventas:P0(p.f.ventas),ebitda:P0(p.d.EBITDA),utilidad_neta_registrada:P0(p.d.UNreg),impuestos_estimados:p.d.impEst})),
+   indicadores:ind,
+   flujo_de_caja:m.flows.map(f=>({periodo:f.from+' a '+f.to,operativo:P0(f.fco),capital_trabajo:P0(f.wc),inversion:P0(f.fci),financiamiento:P0(f.fcf),libre:P0(f.fcl)})),
+   capacidad_pago:{flujo_disponible:P0(d.flujoDisp),servicio_deuda_actual:P0(d.servicio),dscr_actual:fmt('x',d.dscr),dscr_si_renuevan_cp:fmt('x',d.dscrRenov),dscr_con_credito:fmt('x',d.pro&&d.pro.dscrPro),monto_maximo_sostenible:P0(d.pro&&d.pro.montoMax),supuesto_pct_deuda_cp_vence:m.P.pctCP+'%'},
+   alertas:m.alerts.map(a=>a[1]),condiciones_sugeridas:m.conditions};
+}
+const P0=v=>v==null||isNaN(v)?null:Math.round(v);
+function mdToHtml(t){
+ const lines=esc(t).split('\n'); let h='',inList=false;
+ for(let l of lines){
+   l=l.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+   if(/^\s*[-•*]\s+/.test(l)){ if(!inList){h+='<ul>';inList=true;} h+='<li>'+l.replace(/^\s*[-•*]\s+/,'')+'</li>'; continue; }
+   if(inList){h+='</ul>';inList=false;}
+   if(/^#{1,4}\s/.test(l)) h+='<h4>'+l.replace(/^#{1,4}\s/,'')+'</h4>';
+   else if(l.trim()) h+='<p>'+l+'</p>';
+ }
+ if(inList) h+='</ul>';
+ return h;
+}
+async function writeMemo(){
+ const m=lastModel; if(!sampleFn||!m||!m.L) { $('#memoStatus').textContent=m&&m.L?'':'Primero carga los estados financieros.'; return; }
+ const btn=$('#btnMemo'), stop=$('#btnMemoStop'), out=$('#memo'), st=$('#memoStatus');
+ memoCtl=new AbortController(); btn.disabled=true; stop.hidden=false; out.hidden=false; out.innerHTML='<p class="muted">'+AI_NAME+' está analizando…</p>'; st.textContent='';
+ const prompt=`Eres jefe de riesgo crediticio de una institución financiera en Ecuador. Con los datos calculados abajo (no inventes cifras ni supuestos que no estén aquí), redacta en español el dictamen de crédito para el comité. Máximo 500 palabras, tono profesional y directo.
+
+Estructura:
+## Recomendación
+(una frase con la decisión y el monto/condiciones)
+## Situación financiera
+## Flujo de caja y capacidad de pago
+## Fortalezas
+## Riesgos
+## Condiciones para el desembolso
+## ¿Le conviene a la empresa endeudarse?
+(desde la óptica de los socios: WACC, ROIC y EVA con y sin el crédito)
+
+Usa viñetas con "- " donde convenga. Si los datos tienen alertas de calidad, menciónalas. Puedes discrepar del modelo si los datos lo justifican, explicando por qué.
+
+Datos (JSON):
+${JSON.stringify(summaryForAI(m))}`;
+ try{
+   const res=await sampleFn(prompt,{signal:memoCtl.signal,onText:({text})=>{ out.innerHTML=mdToHtml(text); },cache:false});
+   state.memo=res.text; out.innerHTML=mdToHtml(res.text);
+   if(res.truncated) st.textContent='El dictamen quedó incompleto por su extensión.';
+ }catch(e){ if(e&&e.text){ state.memo=e.text; out.innerHTML=mdToHtml(e.text); } else if(!state.memo) out.hidden=true; st.textContent=aiErr(e,'redactar el dictamen'); }
+ btn.disabled=false; stop.hidden=true;
+}
+
+/* ---------- Exportar ---------- */
+async function saveFile(filename,data){
+ const st=$('#exportStatus');
+ if(!dlApi){ st.textContent='La descarga está disponible al abrir esta página en claude.ai.'; return; }
+ try{ await dlApi.save({filename,data}); st.textContent=`Guardado: ${filename}`; }
+ catch(e){ st.textContent=e&&e.code==='declined'?'Descarga cancelada.':'No se pudo guardar el archivo.'; }
+}
+const safeName=s=>String(s||'empresa').replace(/[^\w\s.-]/g,'').trim().replace(/\s+/g,'_').slice(0,50)||'empresa';
+function exportXlsx(){
+ const m=lastModel; if(!m||!m.L||!window.XLSX) return;
+ const wb=XLSX.utils.book_new(); const ps=m.periods, li=ps.indexOf(m.L);
+ const res=[['Evaluación de crédito',state.empresa],['Fecha de corte',fecL(m.L.fecha)],['Decisión',DEC_TXT[m.decision]],['Puntaje',m.score],[],['Monto solicitado',m.P.monto],['Plazo (meses)',m.P.plazo],['Tasa anual %',m.P.tasa],['Sistema y frecuencia',`${SIS[m.P.sistema]}, pago ${FREQ[m.P.frecuencia]}, gracia ${m.P.gracia} meses`],['Primera cuota',m.L.d.pro?Math.round(m.L.d.pro.cuota*100)/100:null],['DSCR mínimo del flujo proyectado',m.projR&&m.projR.dscrMin!=null?Math.round(m.projR.dscrMin*100)/100:'No presentado'],['DSCR con el crédito',m.L.d.pro?m.L.d.pro.dscrPro:null],['Monto máximo sostenible',m.L.d.pro?Math.round(m.L.d.pro.montoMax||0):null],[],['Motivos'],...m.ko.map(x=>[x]),...m.why.map(x=>[x]),[],['Puntaje por categoría'],...Object.keys(CATS).map(c=>[CATS[c],m.catScores[c],'peso '+m.pol.w[c]+'%']),[],['Alertas'],...m.alerts.map(a=>[a[1]]),[],['Condiciones sugeridas'],...m.conditions.map(c=>[c])];
+ if(state.memo) res.push([],['Dictamen'],...state.memo.split('\n').map(l=>[l]));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(res),'Resumen');
+ const ind=[['Categoría','Indicador',...ps.map(p=>p.fecha),'Evaluación','Comentario']];
+ IND.forEach(i=>{ const v=m.vals[i.k][li]; const lv=i.info?null:levelOf(v,m.pol.t[i.k],i.hb); let prev=null,pf=null; for(let j=li-1;j>=0;j--){ if(m.vals[i.k][j]!=null){prev=m.vals[i.k][j];pf=ps[j].fecha;break;} }
+   ind.push([CATS[i.cat],i.l,...ps.map((p,j)=>{const x=m.vals[i.k][j]; return x==null||x===Infinity?fmt(i.u,x):(i.u==='$'?Math.round(x):Math.round(x*10000)/10000);}),lv?LVTXT[lv]:'',commentFor(i,v,lv,m.L.d,m.P,state.sector)+(v!=null?trendTxt(i,v,prev,pf):'')]); });
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ind),'Indicadores');
+ const est=[['Grupo','Concepto','Clave',...ps.map(p=>p.fecha)]];
+ FIELDS.forEach(f=>est.push([GROUPS.find(g=>g[0]===f.g)[1],f.l,f.k,...ps.map(p=>Math.round((p.f[f.k]||0)*100)/100)]));
+ est.push([],['','Total activo','',...ps.map(p=>Math.round(p.d.AT))],['','Total pasivo','',...ps.map(p=>Math.round(p.d.PT))],['','Total patrimonio','',...ps.map(p=>Math.round(p.d.PAT))],['','EBITDA','',...ps.map(p=>Math.round(p.d.EBITDA))],['','Utilidad neta registrada','',...ps.map(p=>Math.round(p.d.UNreg))]);
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(est),'Estados estandarizados');
+ if(m.flows.length){ const fl=m.flows; const r=k=>fl.map(f=>Math.round(f[k]));
+   const fc=[['Concepto',...fl.map(f=>f.from+' a '+f.to)],['Utilidad neta',...r('UN')],['Depreciación',...r('dep')],...fl[0].wcItems.map((it,ix)=>[it[0],...fl.map(f=>Math.round(f.wcItems[ix][1]))]),['Variación capital de trabajo',...r('wc')],['Flujo operativo',...r('fco')],['Inversión activos fijos',...r('capex')],['Otras inversiones',...r('otrosInv')],['Flujo de inversión',...r('fci')],['Flujo libre',...r('fcl')],['Variación deuda financiera',...r('dDeuda')],['Aportes de capital',...r('aportes')],['Dividendos y otros',...r('otrosPat')],['Flujo de financiamiento',...r('fcf')],['Variación de efectivo',...r('total')],['Variación efectivo balance',...r('dCaja')]];
+   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(fc),'Flujo de caja'); }
+ if(m.projR){ const R=m.projR, Y=R.years, r=(l,k)=>[l,...Y.map(y=>Math.round(y[k]))], x=(l,k)=>[l,...Y.map(y=>y[k]==null?'':Math.round(y[k]*100)/100)];
+   const a=[['Concepto',...Y.map(y=>yearLabel(R,y))],r('Cobros e ingresos','ing'),r('Pagos operativos','egr'),r('Impuestos','imp'),r('Flujo operativo','op'),r('Deuda existente','dex'),r('Crédito solicitado','nuevo'),r('Servicio total de deuda','serv'),x('DSCR','dscr'),x('DSCR con estrés','dscrS'),r('Inversiones','inv'),r('Desembolsos y aportes','fin'),r('Dividendos y otras salidas','oth'),r('Flujo neto','net'),r('Saldo de caja al cierre','cashEnd'),[],['Por periodo',...R.labels],['Flujo operativo',...R.op.map(v=>Math.round(v))],['Servicio de deuda',...R.serv.map(v=>Math.round(v))],['Saldo de caja',...R.cash.map(v=>Math.round(v))],[],['Hallazgos'],...projFindings(R,m.P,ppEff(),m.L).map(f=>[f[1]])];
+   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),'Flujo proyectado'); }
+ if(m.val&&!m.val.err){ const v=m.val; const nv=(u,x)=>x==null||!isFinite(x)?'':u==='$'?Math.round(x):Math.round(x*10000)/10000;
+   const a=[['¿Conviene endeudarse?',VER_TXT[v.ver]],[v.resumen],[],['Concepto','Hoy','Con el crédito','Unidad'],...v.tabla.map(r=>[r[0],nv(r[1],r[2]),nv(r[1],r[3]),r[1]==='p'?'decimal (0.10 = 10%)':r[1]==='$'?'US$':'veces']),[],['Nivel de deuda que minimiza el WACC (D/V)',Math.round(v.opt.w*100)/100],[],['Curva: D/V','Ke','Kd después de impuestos','WACC'],...v.curve.map(p=>[Math.round(p.w*100)/100,Math.round(p.ke*10000)/10000,Math.round(p.kd*10000)/10000,Math.round(p.wacc*10000)/10000]),[],['Lectura para los socios'],...v.notas.map(n=>[n])];
+   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),'Valor y WACC'); }
+ const mp=[['Fecha','Documento','Concepto','Código','Cuenta','Valor']];
+ ps.forEach(p=>FIELDS.forEach(f=>(p.src[f.k]||[]).forEach(s=>mp.push([p.fecha,'',f.l,s.code,s.name,s.amount]))));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(mp),'Cuentas clasificadas');
+ const out=XLSX.write(wb,{type:'array',bookType:'xlsx'});
+ saveFile(`Evaluacion_${safeName(state.empresa)}_${m.L.fecha}.xlsx`,new Blob([out]));
+}
+function exportHtml(){
+ const m=lastModel; if(!m||!m.L) return;
+ const css=`body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#13211F;max-width:960px;margin:32px auto;padding:0 20px;font-size:13px;line-height:1.5}h1,h2,h3{font-family:Archivo,Segoe UI,Arial,sans-serif}h1{font-size:22px;margin:0}h2{font-size:16px;margin:26px 0 8px;border-bottom:2px solid #0D6676;padding-bottom:4px}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{border-bottom:1px solid #D5DFDF;padding:5px 7px;text-align:left;vertical-align:top}th{background:#EAF0F0;font-size:11px;text-transform:uppercase}td.r{text-align:right}.dec{font-size:24px;font-weight:800}.good{color:#1D7A4C}.mid{color:#9A6200}.bad{color:#AE3826}.tot td{font-weight:700}@media print{h2{break-after:avoid}tr{break-inside:avoid}}`;
+ const ps=m.periods, li=ps.indexOf(m.L), d=m.L.d; const decCls=m.decision==='APROBAR'?'good':m.decision==='CONDICIONAL'?'mid':'bad';
+ let h=`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Evaluación de crédito · ${esc(state.empresa)}</title><style>${css}</style></head><body>`;
+ h+=`<h1>Evaluación de crédito · ${esc(state.empresa)}</h1><p>Corte: ${fecL(m.L.fecha)} · Sector: ${esc($('#sector').selectedOptions[0].textContent)} · Cifras en US$</p>`;
+ h+=`<p class="dec ${decCls}">${DEC_TXT[m.decision]} · ${m.score==null?'—':m.score}/100</p><p>Crédito: ${fm(m.P.monto)} a ${m.P.plazo} meses al ${m.P.tasa}% (${SIS[m.P.sistema]}, pago ${FREQ[m.P.frecuencia]}) · Primera cuota ${d.pro?fm(d.pro.cuota):'—'} · DSCR con el crédito ${d.pro?fmt('x',d.pro.dscrPro):'—'} · Monto máximo sostenible ${d.pro&&d.pro.montoMax!=null?fm(d.pro.montoMax):'—'}</p>`;
+ if(m.ko.length||m.why.length) h+=`<ul>${[...m.ko,...m.why].map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+ if(state.memo) h+=`<h2>Dictamen</h2>${mdToHtml(state.memo)}`;
+ h+=`<h2>Indicadores financieros</h2><table><tr><th>Indicador</th>${ps.map(p=>`<th>${fecL(p.fecha)}</th>`).join('')}<th>Evaluación</th><th>Comentario</th></tr>`;
+ IND.forEach(i=>{ const v=m.vals[i.k][li]; const lv=i.info?null:levelOf(v,m.pol.t[i.k],i.hb); let prev=null,pf=null; for(let j=li-1;j>=0;j--){ if(m.vals[i.k][j]!=null){prev=m.vals[i.k][j];pf=ps[j].fecha;break;} }
+   h+=`<tr><td>${esc(i.l)}</td>${ps.map((p,j)=>`<td class="r">${fmt(i.u,m.vals[i.k][j])}</td>`).join('')}<td class="${lv||''}">${lv?LVTXT[lv]:''}</td><td>${esc(commentFor(i,v,lv,d,m.P,state.sector)+(v!=null?trendTxt(i,v,prev,pf):''))}</td></tr>`; });
+ h+='</table>';
+ if(m.flows.length){ const fl=m.flows; const r=(l,k,cls='')=>`<tr class="${cls}"><td>${l}</td>${fl.map(f=>`<td class="r">${fm(f[k])}</td>`).join('')}</tr>`;
+   h+=`<h2>Flujo de caja (método indirecto)</h2><table><tr><th>Concepto</th>${fl.map(f=>`<th>${fecL(f.from)} → ${fecL(f.to)}</th>`).join('')}</tr>${r('Utilidad neta','UN')}${r('Depreciación','dep')}${r('Variación capital de trabajo','wc')}${r('Flujo operativo','fco','tot')}${r('Flujo de inversión','fci')}${r('Flujo libre','fcl','tot')}${r('Flujo de financiamiento','fcf')}${r('Variación de efectivo','total','tot')}</table><p>${esc(flowComment(fl[fl.length-1],d))}</p>`; }
+ if(m.projR){ const R=m.projR, Y=R.years; const r=(l,fn,cls='')=>`<tr class="${cls}"><td>${l}</td>${Y.map(y=>`<td class="r">${fn(y)}</td>`).join('')}</tr>`;
+   h+=`<h2>Flujo proyectado presentado por la empresa</h2><table><tr><th>Concepto</th>${Y.map(y=>`<th>${esc(yearLabel(R,y))}</th>`).join('')}</tr>${r('Cobros e ingresos',y=>fm(y.ing))}${r('Pagos operativos e impuestos',y=>fm(-(y.egr+y.imp)))}${r('Flujo operativo',y=>fm(y.op),'tot')}${r('Deuda existente',y=>fm(-y.dex))}${r('Crédito solicitado',y=>fm(-y.nuevo))}${r('DSCR',y=>fmt('x',y.dscr),'tot')}${r('DSCR con ingresos −'+ppEff().estres+'%',y=>fmt('x',y.dscrS))}${r('Saldo de caja al cierre',y=>fm(y.cashEnd),'tot')}</table><ul>${projFindings(R,m.P,ppEff(),m.L).map(f=>`<li>${esc(f[1])}</li>`).join('')}</ul>`; }
+ if(m.val&&!m.val.err){ const v=m.val; h+=`<h2>¿Conviene endeudarse? Valor para los dueños</h2><p><strong>${VER_TXT[v.ver]}.</strong> ${esc(v.resumen)}</p><table><tr><th>Concepto</th><th>Hoy</th><th>Con el crédito</th></tr>${v.tabla.map(r=>`<tr><td>${esc(r[0])}</td><td class="r">${fmtV(r[1],r[2])}</td><td class="r">${fmtV(r[1],r[3])}</td></tr>`).join('')}</table><ul>${v.notas.map(n=>`<li>${esc(n)}</li>`).join('')}</ul><p style="color:#586B68">Supuestos de mercado: tasa libre de riesgo ${state.val.rf}%, prima de mercado ${state.val.erp}%, riesgo país ${state.val.crp}%, prima por tamaño ${state.val.size}%, beta desapalancada ${v.bu}, tasa fiscal ${state.val.tax}%.</p>`; }
+ h+=`<h2>Estados estandarizados</h2><table><tr><th>Concepto</th>${ps.map(p=>`<th>${fecL(p.fecha)}</th>`).join('')}</tr>`;
+ FIELDS.forEach(f=>{ h+=`<tr><td>${esc(f.l)}</td>${ps.map(p=>`<td class="r">${fm(p.f[f.k])}</td>`).join('')}</tr>`; if(f.k==='otros_anc') h+=`<tr class="tot"><td>Total activo</td>${ps.map(p=>`<td class="r">${fm(p.d.AT)}</td>`).join('')}</tr>`; if(f.k==='otros_pnc') h+=`<tr class="tot"><td>Total pasivo</td>${ps.map(p=>`<td class="r">${fm(p.d.PT)}</td>`).join('')}</tr>`; if(f.k==='resultado_ejercicio') h+=`<tr class="tot"><td>Total patrimonio</td>${ps.map(p=>`<td class="r">${fm(p.d.PAT)}</td>`).join('')}</tr>`; });
+ h+='</table>';
+ h+=`<h2>Alertas</h2><ul>${m.alerts.map(a=>`<li>${esc(a[1])}</li>`).join('')||'<li>Sin alertas.</li>'}</ul><h2>Condiciones sugeridas</h2><ul>${m.conditions.map(c=>`<li>${esc(c)}</li>`).join('')}</ul>`;
+ h+=`<p style="color:#586B68;margin-top:30px">Informe generado con el Evaluador Crediticio. Es una herramienta de apoyo; la decisión final corresponde al comité de crédito.</p></body></html>`;
+ saveFile(`Informe_${safeName(state.empresa)}_${m.L.fecha}.html`,h);
+}
+function exportTemplate(){
+ if(!window.XLSX) return;
+ const y=new Date().getFullYear();
+ const aoa=[['Concepto','Clave',`${y-2}-12-31`,`${y-1}-12-31`],['Empresa','empresa','',''],['Meses del estado de resultados','meses',12,12]];
+ GROUPS.forEach(([g,gl])=>{ aoa.push([gl.toUpperCase(),'','','']); FIELDS.filter(f=>f.g===g).forEach(f=>aoa.push([f.l,f.k,'',''])); });
+ aoa.push([],['Instrucciones: escriba valores positivos en US$. La depreciación acumulada se resta dentro de propiedad, planta y equipo. Una pérdida se escribe con signo negativo. Puede agregar o quitar columnas de fecha (AAAA-MM-DD).']);
+ const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:44},{wch:20},{wch:14},{wch:14}];
+ const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'PLANTILLA');
+ saveFile('Plantilla_estados_financieros.xlsx',new Blob([XLSX.write(wb,{type:'array',bookType:'xlsx'})]));
+}
+
+/* ---------- Eventos ---------- */
+const file=$('#file'), drop=$('#drop');
+file.addEventListener('change',()=>{ handleFiles(file.files); file.value=''; });
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{ if(e.dataTransfer&&e.dataTransfer.files) handleFiles(e.dataTransfer.files); });
+$('#btnExample').addEventListener('click',()=>{ loadExample(); loadExampleProj(); renderParams(); $('#memo').hidden=true; renderAll(); $('#docStatus').textContent='Ejemplo cargado.'; });
+$('#btnClear').addEventListener('click',()=>{ state.docs=[]; state.overrides={}; state.example=false; state.proj=null; $('#projStatus').textContent=''; state.empresa=''; state.memo=''; $('#memo').hidden=true; $('#empresa').value=''; $('#docStatus').textContent=''; renderAll(); });
+$('#btnTemplate').addEventListener('click',exportTemplate);
+$('#btnXlsx').addEventListener('click',exportXlsx);
+$('#btnHtml').addEventListener('click',exportHtml);
+$('#btnMemo').addEventListener('click',writeMemo);
+$('#btnMemoStop').addEventListener('click',()=>{ if(memoCtl) memoCtl.abort(); });
+$('#empresa').addEventListener('input',e=>{ state.empresa=e.target.value; renderVerdict(lastModel||compute()); });
+$('#sector').addEventListener('change',e=>{ state.sector=e.target.value; state.policy=sectorPolicy(state.sector); renderPolicy(); saveParams(); renderCalc(); });
+$('#btnResetPolicy').addEventListener('click',()=>{ state.policy=sectorPolicy(state.sector); renderPolicy(); saveParams(); renderCalc(); });
+$('#docList').addEventListener('change',e=>{
+ const t=e.target, box=t.closest('.doc'); if(!box) return; const doc=state.docs.find(d=>d.id===+box.dataset.id); if(!doc) return;
+ if(t.dataset.act==='fecha'){ doc.fecha=t.value||null; renderAll(); }
+ if(t.dataset.act==='meses'){ const n=parseInt(t.value,10); if(n>=1&&n<=24){ doc.meses=n; renderAll(); } }
+});
+$('#docList').addEventListener('click',e=>{
+ const b=e.target.closest('button'); if(!b) return; const box=b.closest('.doc'); const doc=state.docs.find(d=>d.id===+box.dataset.id); if(!doc) return;
+ const a=b.dataset.act;
+ if(a==='del'){ state.docs=state.docs.filter(d=>d!==doc); if(!state.docs.length) state.example=false; renderAll(); }
+ if(a==='ai') aiClassify(doc,b);
+ if(a==='read') aiRead(doc,b);
+ if(a==='rules'){ doc.ai=null; doc.agg=aggregate(doc); renderAll(); }
+});
+$('#dataTable').addEventListener('click',e=>{
+ const b=e.target.closest('.lbtn'); if(!b) return; const r=document.querySelector(`tr[data-srcrow="${b.dataset.src}"]`); if(r){ r.hidden=!r.hidden; b.setAttribute('aria-expanded',String(!r.hidden)); }
+});
+$('#dataTable').addEventListener('change',e=>{
+ const t=e.target; if(!t.classList.contains('vin')) return;
+ const v=parseNum(t.value.replace(/,/g,'')); const fe=t.dataset.fecha, k=t.dataset.k;
+ if(t.value.trim()===''||isNaN(v)){ if(state.overrides[fe]) delete state.overrides[fe][k]; }
+ else{ state.overrides[fe]=state.overrides[fe]||{}; state.overrides[fe][k]=v; }
+ refreshDataTotals();
+});
+$('#dataTable').addEventListener('dblclick',e=>{
+ const t=e.target; if(!t.classList||!t.classList.contains('vin')) return; const fe=t.dataset.fecha,k=t.dataset.k;
+ if(state.overrides[fe]&&k in state.overrides[fe]){ delete state.overrides[fe][k]; refreshDataTotals(); }
+});
+function bindParam(id,key,parse){ $(id).addEventListener('input',e=>{ const el=e.target; const v=parse(el); if(v!=null&&!isNaN(v)){ state.params[key]=v; saveParams(); renderCalc(); } }); }
+const numP=el=>{ const v=parseNum(String(el.value).replace(/,/g,'')); return isNaN(v)?null:v; };
+bindParam('#p_monto','monto',numP); bindParam('#p_plazo','plazo',numP); bindParam('#p_tasa','tasa',numP); bindParam('#p_garantia','garantia',numP);
+bindParam('#p_pctCP','pctCP',el=>{const v=numP(el); return v==null?null:Math.max(0,Math.min(100,v));});
+bindParam('#p_aniosLP','aniosLP',el=>{const v=numP(el); return v&&v>0?v:null;});
+bindParam('#p_dscrObj','dscrObj',el=>{const v=numP(el); return v&&v>=1?v:null;});
+$('#p_sistema').addEventListener('change',e=>{ state.params.sistema=e.target.value; saveParams(); renderCalc(); });
+$('#p_frecuencia').addEventListener('change',e=>{ state.params.frecuencia=+e.target.value||1; saveParams(); renderCalc(); });
+bindParam('#p_gracia','gracia',el=>{const v=numP(el); return v==null?null:Math.max(0,v);});
+const pfile=$('#pfile'), pdrop=$('#pdrop');
+pfile.addEventListener('change',()=>{ if(pfile.files[0]) handleProjFile(pfile.files[0]); pfile.value=''; });
+['dragenter','dragover'].forEach(ev=>pdrop.addEventListener(ev,e=>{e.preventDefault();pdrop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>pdrop.addEventListener(ev,e=>{e.preventDefault();pdrop.classList.remove('over');}));
+pdrop.addEventListener('drop',e=>{ const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) handleProjFile(f); });
+$('#btnProjTemplate').addEventListener('click',exportProjTemplate);
+$('#btnProjClear').addEventListener('click',()=>{ state.proj=null; state.pp=Object.assign({},DEF_PP); renderParams(); $('#projStatus').textContent=''; renderProjRows(); renderCalc(); });
+$('#btnProjAI').addEventListener('click',e=>aiProjClassify(e.currentTarget));
+$('#btnProjRead').addEventListener('click',e=>aiProjRead(e.currentTarget));
+$('#pp_len').addEventListener('change',e=>{ state.pp.len=+e.target.value||null; renderCalc(); });
+$('#pp_des').addEventListener('input',e=>{ const v=parseInt(e.target.value,10); if(v>=1){ state.pp.desembolso=v; renderCalc(); } });
+$('#pp_fuente').addEventListener('change',e=>{ state.pp.fuente=e.target.value; renderCalc(); });
+$('#pp_estres').addEventListener('input',e=>{ const v=parseFloat(e.target.value); if(!isNaN(v)&&v>=0&&v<100){ state.pp.estres=v; renderCalc(); } });
+$('#pp_saldo').addEventListener('input',e=>{ const t=e.target.value.trim(); if(!t){ state.pp.saldoIni=null; renderCalc(); return; } const v=parseNum(t.replace(/,/g,'')); if(!isNaN(v)){ state.pp.saldoIni=v; renderCalc(); } });
+$('#pp_incl').addEventListener('change',e=>{ state.pp.incluyeDesembolso=e.target.checked; renderCalc(); });
+$('#pp_deuda').addEventListener('change',e=>{ state.pp.agregarDeuda=e.target.checked; renderCalc(); });
+$('#projRows').addEventListener('change',e=>{ const t=e.target; if(t.dataset.pr==null||!state.proj) return; const r=state.proj.rows[+t.dataset.pr]; if(r){ r.cat=t.value; renderCalc(); } });
+['rf','erp','crp','size','tax','bu','kd','rp'].forEach(k=>{ $('#v_'+k).addEventListener('input',e=>{ const t=e.target.value.trim(); const opt=['bu','kd','rp'].includes(k);
+ if(!t){ if(opt){ state.val[k]=null; saveParams(); renderCalc(); } return; }
+ const v=parseFloat(t.replace(',','.')); if(isNaN(v)||(k==='tax'&&(v<0||v>=100))||(k==='bu'&&v<=0)) return; state.val[k]=v; saveParams(); renderCalc(); }); });
+$('#p_refinancia').addEventListener('change',e=>{ state.params.refinancia=e.target.checked; saveParams(); renderCalc(); });
+$('#p_estimarImp').addEventListener('change',e=>{ state.params.estimarImp=e.target.checked; saveParams(); renderCalc(); });
+$('#credito').addEventListener('input',e=>{
+ const t=e.target;
+ if(t.dataset.pk){ const i=IND.find(x=>x.k===t.dataset.pk); const v=parseFloat(t.value); if(!isNaN(v)){ state.policy.t[i.k]=state.policy.t[i.k]||[null,null]; state.policy.t[i.k][+t.dataset.pi]=i.u==='%'?v/100:v; saveParams(); renderCalc(); } }
+ if(t.dataset.pw){ const v=parseFloat(t.value); if(!isNaN(v)&&v>=0){ state.policy.w[t.dataset.pw]=v; saveParams(); renderCalc(); } }
+});
+
+/* ---------- Capacidades ---------- */
+/* Dos modos: dentro de claude.ai (artefacto) o como aplicación web propia (servidor con /api/claude). */
+let HOST='artifact', needsCode=false, AI_NAME='Claude';
+const NO_AI_TXT=()=>HOST==='web'?'Activa la IA gratuita de Gemini en el paso 1.':'Disponible al abrir esta página en claude.ai.';
+function getAccessCode(){ try{ return localStorage.getItem('ec_code')||''; }catch(e){ return ''; } }
+const lsGet=k=>{ try{ return localStorage.getItem(k)||''; }catch(e){ return ''; } };
+const lsSet=(k,v)=>{ try{ if(v) localStorage.setItem(k,v); else localStorage.removeItem(k); }catch(e){} };
+
+/* ---------- Gemini (gratis, con la clave de cada usuario; se llama directo desde el navegador) ---------- */
+const GEM_URL='https://generativelanguage.googleapis.com/v1beta';
+async function gemPickModel(key){
+ const r=await fetch(`${GEM_URL}/models?pageSize=200`,{headers:{'x-goog-api-key':key}});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok) throw {code:r.status===429?'rate_limited':(r.status===400||r.status===401||r.status===403)?'not_granted':'upstream_error',message:j.error&&j.error.message||''};
+ const ok=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>String(m.name).replace(/^models\//,''));
+ const ver=n=>{ const m=n.match(/gemini-(\d+(?:\.\d+)?)/); return m?parseFloat(m[1]):0; };
+ const flash=ok.filter(n=>/flash/.test(n)&&!/lite|preview|exp|image|tts|live|audio|thinking|embed/.test(n)).sort((a,b)=>ver(b)-ver(a));
+ const any=ok.filter(n=>/flash/.test(n)&&!/image|tts|live|audio|embed/.test(n)).sort((a,b)=>ver(b)-ver(a));
+ return flash[0]||any[0]||'gemini-3.8-flash';
+}
+function makeGeminiSample(key,model){
+ const call=async(input,opts={},asJson=false)=>{
+   const prompt=typeof input==='string'?input:input.map(m=>m.content).join('\n\n');
+   const list=opts.images?(opts.images instanceof Blob?[opts.images]:Array.from(opts.images)):[];
+   const parts=[]; for(const b of list) parts.push({inlineData:{mimeType:'image/jpeg',data:await blobToB64(b)}});
+   parts.push({text:prompt});
+   const body={contents:[{role:'user',parts}],generationConfig:Object.assign({maxOutputTokens:32768},asJson?{responseMimeType:'application/json'}:{})};
+   let r;
+   try{ r=await fetch(`${GEM_URL}/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body),signal:opts.signal}); }
+   catch(e){ throw {code:e&&e.name==='AbortError'?'cancelled':'upstream_error',message:String(e)}; }
+   const j=await r.json().catch(()=>({}));
+   const msg=j.error&&j.error.message||'';
+   if(!r.ok) throw {code:r.status===429?'rate_limited':((r.status===400&&/key/i.test(msg))||r.status===401||r.status===403)?'not_granted':r.status===400?'invalid_request':'upstream_error',message:msg};
+   if(j.promptFeedback&&j.promptFeedback.blockReason) throw {code:'refused',message:j.promptFeedback.blockReason};
+   const cand=(j.candidates||[])[0]||{};
+   const text=((cand.content&&cand.content.parts)||[]).filter(p=>!p.thought).map(p=>p.text||'').join('');
+   if(!text.trim()) throw {code:/SAFETY|BLOCKLIST|PROHIBITED|SPII|RECITATION/.test(cand.finishReason||'')?'refused':'empty_completion',message:cand.finishReason||''};
+   if(opts.onText) opts.onText({text,delta:text});
+   return {text,truncated:cand.finishReason==='MAX_TOKENS',modelTierApplied:'default'};
+ };
+ const fn=(i,o)=>call(i,o,false);
+ fn.json=async(i,o)=>{ const {text}=await call(i,o,true); const v=parseJsonLoose(text); if(v===undefined) throw {code:'invalid_json',text}; return v; };
+ fn.limits=async()=>({maxPromptBytes:262144,images:{maxCount:4,maxInputBytes:20e6,mediaTypes:['image/jpeg']}});
+ return fn;
+}
+function activateGemini(key,model){ sampleFn=makeGeminiSample(key,model); imagesOK=true; maxImgs=4; AI_NAME='Gemini'; }
+function aiErrGem(e){ return e&&e.code==='not_granted'?'Google rechazó la clave. Cópiala de nuevo desde Google AI Studio.':e&&e.code==='rate_limited'?'Límite gratuito alcanzado; intenta en un momento.':'No se pudo conectar con Google. Revisa tu conexión.'; }
+async function saveGeminiKey(){
+ const inp=$('#gemKey'), st=$('#gemStatus'); const key=(inp&&inp.value||'').trim(); if(!key){ st.textContent='Pega la clave primero.'; return; }
+ st.textContent='Verificando la clave con Google…';
+ try{ const model=await gemPickModel(key); lsSet('ec_gemini_key',key); lsSet('ec_gemini_model',model); activateGemini(key,model); updateCapsUI(); $('#gemStatus').textContent=`Listo: Gemini activo (modelo ${model}).`; }
+ catch(e){ st.textContent=aiErrGem(e); }
+}
+function geminiPanel(){
+ const on=AI_NAME==='Gemini'&&!!sampleFn;
+ return `<div class="owner" style="gap:8px">
+  <strong>${on?'IA activa: Google Gemini (plan gratuito)':'Activa la IA gratis con Google Gemini'}</strong>
+  <span class="small">Sirve para leer PDF escaneados, clasificar formatos desconocidos y redactar el dictamen. ${on?'':'Crea una clave gratuita en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> con tu cuenta de Google, cópiala y pégala aquí. Se guarda solo en este navegador.'}</span>
+  <div class="row">${on?`<span class="small muted">Modelo: ${esc(lsGet('ec_gemini_model'))}</span><button id="gemRemove" type="button">Quitar clave</button>`:`<input id="gemKey" type="password" autocomplete="off" placeholder="Clave de Gemini" aria-label="Clave de Gemini" style="width:min(320px,100%)"><button id="gemSave" type="button" class="primary">Activar</button>`}</div>
+  <span id="gemStatus" class="small muted" role="status"></span>
+  <span class="small" style="color:var(--warn)">Privacidad: en el plan gratuito, Google puede usar lo que envíes para mejorar sus productos. Usa la IA solo con información que puedas compartir, o activa la facturación en tu proyecto de Google para estados confidenciales de clientes. Los cálculos de la app no usan IA y nunca salen de tu computadora.</span>
+ </div>`;
+}
+function updateCapsUI(){
+ document.querySelectorAll('.ainame').forEach(e=>{ e.textContent=AI_NAME; });
+ $('#btnMemo').disabled=!sampleFn;
+ const base=sampleFn?(imagesOK?''+AI_NAME+' puede leer PDFs escaneados y reclasificar cuentas cuando el formato no se reconozca.':''+AI_NAME+' puede reclasificar cuentas cuando el formato no se reconozca.'):(HOST==='web'?'Versión gratuita: lee PDF digitales y Excel automáticamente. Si un PDF es escaneado (sin texto) o el formato no se reconoce, pasa los datos a la plantilla Excel.':'Las funciones con '+AI_NAME+' (leer escaneados, clasificar cuentas y redactar el dictamen) están disponibles al abrir esta página en claude.ai.');
+ if(HOST==='web'&&sampleFn&&needsCode) $('#aiNote').innerHTML=`${esc(base)} <label class="f" for="accessCode" style="display:inline-grid;margin-left:8px">Código de acceso<input id="accessCode" type="password" autocomplete="off" value="${esc(getAccessCode())}" style="width:180px"></label>`;
+ else if(HOST==='web'&&(AI_NAME==='Gemini'||!sampleFn)) $('#aiNote').innerHTML=geminiPanel();
+ else $('#aiNote').textContent=base;
+ $('#memoStatus').textContent=sampleFn?'':NO_AI_TXT();
+ ['#btnXlsx','#btnHtml','#btnTemplate'].forEach(s=>{ $(s).title=dlApi?'':'Disponible al abrir esta página en claude.ai'; });
+ renderDocs(); try{ renderProjRows(); }catch(e){}
+}
+function parseJsonLoose(t){
+ try{ return JSON.parse(t); }catch(e){}
+ const f=t.match(/```(?:json)?\s*([\s\S]*?)```/); if(f){ try{ return JSON.parse(f[1]); }catch(e){} }
+ const a=Math.min(...['{','['].map(c=>{ const i=t.indexOf(c); return i<0?Infinity:i; })), b=Math.max(t.lastIndexOf('}'),t.lastIndexOf(']'));
+ if(isFinite(a)&&a<b){ try{ return JSON.parse(t.slice(a,b+1)); }catch(e){} }
+ return undefined;
+}
+const blobToB64=b=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(b); });
+function makeServerSample(){
+ const call=async(input,opts={})=>{
+   const prompt=typeof input==='string'?input:input.map(m=>m.content).join('\n\n');
+   const list=opts.images?(opts.images instanceof Blob?[opts.images]:Array.from(opts.images)):[];
+   const images=[]; for(const b of list) images.push(await blobToB64(b));
+   const headers={'Content-Type':'application/json'}; const code=getAccessCode(); if(code) headers['x-access-code']=code;
+   let r;
+   try{ r=await fetch('api/claude',{method:'POST',headers,body:JSON.stringify({prompt,images}),signal:opts.signal}); }
+   catch(e){ throw {code:e&&e.name==='AbortError'?'cancelled':'upstream_error',message:String(e)}; }
+   const j=await r.json().catch(()=>({}));
+   if(!r.ok) throw {code:j.code||(r.status===401?'not_granted':r.status===429?'rate_limited':'upstream_error'),message:j.message||''};
+   if(opts.onText&&j.text) opts.onText({text:j.text,delta:j.text});
+   return {text:j.text||'',truncated:!!j.truncated,modelTierApplied:'default'};
+ };
+ const fn=(i,o)=>call(i,o);
+ fn.json=async(i,o)=>{ const {text}=await call(i,o); const v=parseJsonLoose(text); if(v===undefined) throw {code:'invalid_json',text}; return v; };
+ fn.limits=async()=>({maxPromptBytes:262144,images:{maxCount:4,maxInputBytes:20e6,mediaTypes:['image/jpeg']}});
+ return fn;
+}
+async function initCaps(){
+ const c=window.claude;
+ if(c&&typeof c.use==='function'){
+   try{ const [s,d]=await Promise.all([c.use('sample').catch(()=>null),c.use('downloads').catch(()=>null)]); sampleFn=s; dlApi=d;
+     if(sampleFn&&sampleFn.limits){ const lim=await sampleFn.limits().catch(()=>null); if(lim&&lim.images){ imagesOK=true; maxImgs=Math.max(1,Math.min(lim.images.maxCount||1,6)); } }
+   }catch(e){}
+ } else {
+   HOST='web';
+   dlApi={save:async({filename,data})=>{ const blob=data instanceof Blob?data:new Blob([data]); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); return {status:'saved'}; }};
+   try{ const r=await fetch('api/claude',{method:'GET'}); if(r.ok&&/json/.test(r.headers.get('content-type')||'')){ const j=await r.json(); if(j&&j.enabled){ sampleFn=makeServerSample(); imagesOK=true; maxImgs=4; needsCode=!!j.needsCode; } } }catch(e){}
+   if(!sampleFn){ const k=lsGet('ec_gemini_key'), mdl=lsGet('ec_gemini_model'); if(k&&mdl) activateGemini(k,mdl); }
+ }
+ updateCapsUI();
+}
+document.addEventListener('input',e=>{ if(e.target&&e.target.id==='accessCode'){ try{ localStorage.setItem('ec_code',e.target.value); }catch(err){} } });
+document.addEventListener('click',e=>{
+ const t=e.target; if(!t||!t.id) return;
+ if(t.id==='gemSave') saveGeminiKey();
+ if(t.id==='gemRemove'){ lsSet('ec_gemini_key',''); lsSet('ec_gemini_model',''); sampleFn=null; imagesOK=false; AI_NAME='Claude'; updateCapsUI(); }
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target&&e.target.id==='gemKey') saveGeminiKey(); });
+
+window.__ec={parseNum,classifyRows,aggregate,pdfLineToRow,detectMeta,state,compute,renderAll};
+loadExample(); loadExampleProj(); renderParams(); renderPolicy(); renderAll(); updateCapsUI(); initCaps();
+})();
+</script>
+
+</body>
+</html>

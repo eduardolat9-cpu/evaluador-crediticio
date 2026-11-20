@@ -1,0 +1,16 @@
+{
+  "name": "evaluador-crediticio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Evaluador de crédito empresarial (NIIF, US$, Ecuador)",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0"
+  }
+}
