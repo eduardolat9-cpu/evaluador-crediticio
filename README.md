@@ -41,6 +41,11 @@ Google directamente desde su navegador. La clave se guarda solo en ese navegador
 1. Entra a https://aistudio.google.com/apikey con una cuenta de Google y crea una clave (gratis).
 2. En la app, paso 1, pégala y pulsa **Activar**. La app elige sola el modelo Flash más reciente.
 
+**Usar la IA en otro navegador o computador sin volver a pegar la clave:** con la IA activa, pulsa
+**Copiar mi enlace personal** y guarda ese enlace (gestor de contraseñas, nota privada). Al abrirlo,
+la página guarda la clave en ese navegador y borra el enlace de la barra de direcciones. El enlace
+contiene tu clave: no lo compartas. Si se filtra, elimina la clave en Google AI Studio y crea otra.
+
 Límites del plan gratuito de Google: hay un número máximo de solicitudes por minuto y por día; si
 se alcanza, la app avisa y basta con esperar.
 

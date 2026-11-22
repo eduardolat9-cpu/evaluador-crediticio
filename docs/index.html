@@ -1781,6 +1781,7 @@ ${lines}`;
 }
 function aiErr(e,what){
  const c=e&&e.code;
+ if(GEMINI_PROXY&&c==='not_granted') return 'Código de acceso incorrecto. Cámbialo en el paso 1.';
  if((c==='not_granted'||c==='sampling_disabled')&&AI_NAME==='Gemini') return 'Google rechazó la clave de Gemini. Revísala o pega una nueva en el paso 1.';
  if(c==='rate_limited'&&AI_NAME==='Gemini') return 'Se alcanzó el límite gratuito de Gemini (por minuto o por día). Espera un momento e intenta de nuevo.';
  if(c==='not_granted'||c==='sampling_disabled') return HOST==='web'?'El servidor rechazó la solicitud: revisa el código de acceso o la clave de Anthropic configurada.':''+AI_NAME+' no tiene permiso en esta página. Puedes habilitarlo desde el menú de permisos del artefacto.';
@@ -2036,6 +2037,9 @@ const lsSet=(k,v)=>{ try{ if(v) localStorage.setItem(k,v); else localStorage.rem
 
 /* ---------- Gemini (gratis, con la clave de cada usuario; se llama directo desde el navegador) ---------- */
 const GEM_URL='https://generativelanguage.googleapis.com/v1beta';
+/* Dirección del intermediario (Cloudflare Worker) que guarda la clave de Gemini del propietario.
+   Si está vacía, cada usuario pega su propia clave. */
+const GEMINI_PROXY='';
 async function gemPickModel(key){
  const r=await fetch(`${GEM_URL}/models?pageSize=200`,{headers:{'x-goog-api-key':key}});
  const j=await r.json().catch(()=>({}));
@@ -2046,7 +2050,7 @@ async function gemPickModel(key){
  const any=ok.filter(n=>/flash/.test(n)&&!/image|tts|live|audio|embed/.test(n)).sort((a,b)=>ver(b)-ver(a));
  return flash[0]||any[0]||'gemini-3.8-flash';
 }
-function makeGeminiSample(key,model){
+function makeGeminiSample(key,model,proxy){
  const call=async(input,opts={},asJson=false)=>{
    const prompt=typeof input==='string'?input:input.map(m=>m.content).join('\n\n');
    const list=opts.images?(opts.images instanceof Blob?[opts.images]:Array.from(opts.images)):[];
@@ -2054,7 +2058,7 @@ function makeGeminiSample(key,model){
    parts.push({text:prompt});
    const body={contents:[{role:'user',parts}],generationConfig:Object.assign({maxOutputTokens:32768},asJson?{responseMimeType:'application/json'}:{})};
    let r;
-   try{ r=await fetch(`${GEM_URL}/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body),signal:opts.signal}); }
+   try{ r=await fetch(proxy||`${GEM_URL}/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:proxy?{'Content-Type':'application/json','x-access-code':getAccessCode()}:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body),signal:opts.signal}); }
    catch(e){ throw {code:e&&e.name==='AbortError'?'cancelled':'upstream_error',message:String(e)}; }
    const j=await r.json().catch(()=>({}));
    const msg=j.error&&j.error.message||'';
@@ -2072,6 +2076,7 @@ function makeGeminiSample(key,model){
  return fn;
 }
 function activateGemini(key,model){ sampleFn=makeGeminiSample(key,model); imagesOK=true; maxImgs=4; AI_NAME='Gemini'; }
+function activateProxy(){ sampleFn=makeGeminiSample('','',GEMINI_PROXY); imagesOK=true; maxImgs=4; AI_NAME='Gemini'; }
 function aiErrGem(e){ return e&&e.code==='not_granted'?'Google rechazó la clave. Cópiala de nuevo desde Google AI Studio.':e&&e.code==='rate_limited'?'Límite gratuito alcanzado; intenta en un momento.':'No se pudo conectar con Google. Revisa tu conexión.'; }
 async function saveGeminiKey(){
  const inp=$('#gemKey'), st=$('#gemStatus'); const key=(inp&&inp.value||'').trim(); if(!key){ st.textContent='Pega la clave primero.'; return; }
@@ -2079,12 +2084,32 @@ async function saveGeminiKey(){
  try{ const model=await gemPickModel(key); lsSet('ec_gemini_key',key); lsSet('ec_gemini_model',model); activateGemini(key,model); updateCapsUI(); $('#gemStatus').textContent=`Listo: Gemini activo (modelo ${model}).`; }
  catch(e){ st.textContent=aiErrGem(e); }
 }
+async function saveAccessCode(){
+ const inp=$('#codeKey'), st=$('#gemStatus'); const code=(inp&&inp.value||'').trim(); if(!code){ st.textContent='Escribe el código primero.'; return; }
+ st.textContent='Verificando…';
+ try{
+   const r=await fetch(GEMINI_PROXY,{method:'GET',headers:{'x-access-code':code}});
+   if(r.status===401){ st.textContent='Código incorrecto.'; return; }
+   if(!r.ok) throw new Error('http '+r.status);
+   lsSet('ec_code',code); activateProxy(); updateCapsUI();
+ }catch(e){ st.textContent='No se pudo conectar con el servicio de IA. Revisa tu conexión.'; }
+}
+function proxyPanel(){
+ const on=!!sampleFn;
+ return `<div class="owner" style="gap:8px">
+  <strong>${on?'IA activa: Google Gemini':'La IA de Gemini está protegida con un código de acceso'}</strong>
+  <span class="small">${on?'Leer PDF escaneados, clasificar cuentas y redactar el dictamen. El código queda guardado en este navegador.':'Escribe tu código de acceso para leer PDF escaneados, clasificar cuentas y redactar el dictamen. Sin el código, el resto de la aplicación funciona igual.'}</span>
+  <div class="row">${on?'<button id="codeRemove" type="button">Cambiar código</button>':'<input id="codeKey" type="password" autocomplete="off" placeholder="Código de acceso" aria-label="Código de acceso" style="width:min(260px,100%)"><button id="codeSave" type="button" class="primary">Activar</button>'}</div>
+  <span id="gemStatus" class="small muted" role="status"></span>
+ </div>`;
+}
 function geminiPanel(){
+ if(GEMINI_PROXY) return proxyPanel();
  const on=AI_NAME==='Gemini'&&!!sampleFn;
  return `<div class="owner" style="gap:8px">
   <strong>${on?'IA activa: Google Gemini (plan gratuito)':'Activa la IA gratis con Google Gemini'}</strong>
   <span class="small">Sirve para leer PDF escaneados, clasificar formatos desconocidos y redactar el dictamen. ${on?'':'Crea una clave gratuita en <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> con tu cuenta de Google, cópiala y pégala aquí. Se guarda solo en este navegador.'}</span>
-  <div class="row">${on?`<span class="small muted">Modelo: ${esc(lsGet('ec_gemini_model'))}</span><button id="gemRemove" type="button">Quitar clave</button>`:`<input id="gemKey" type="password" autocomplete="off" placeholder="Clave de Gemini" aria-label="Clave de Gemini" style="width:min(320px,100%)"><button id="gemSave" type="button" class="primary">Activar</button>`}</div>
+  <div class="row">${on&&GEMINI_PROXY?'':on?`<span class="small muted">Modelo:${esc(lsGet('ec_gemini_model'))}</span><button id="gemLink" type="button">Copiar mi enlace personal</button><button id="gemRemove" type="button">Quitar clave</button>`:`<input id="gemKey" type="password" autocomplete="off" placeholder="Clave de Gemini" aria-label="Clave de Gemini" style="width:min(320px,100%)"><button id="gemSave" type="button" class="primary">Activar</button>`}</div>
   <span id="gemStatus" class="small muted" role="status"></span>
   <span class="small" style="color:var(--warn)">Privacidad: en el plan gratuito, Google puede usar lo que envíes para mejorar sus productos. Usa la IA solo con información que puedas compartir, o activa la facturación en tu proyecto de Google para estados confidenciales de clientes. Los cálculos de la app no usan IA y nunca salen de tu computadora.</span>
  </div>`;
@@ -2137,7 +2162,16 @@ async function initCaps(){
    HOST='web';
    dlApi={save:async({filename,data})=>{ const blob=data instanceof Blob?data:new Blob([data]); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),5000); return {status:'saved'}; }};
    try{ const r=await fetch('api/claude',{method:'GET'}); if(r.ok&&/json/.test(r.headers.get('content-type')||'')){ const j=await r.json(); if(j&&j.enabled){ sampleFn=makeServerSample(); imagesOK=true; maxImgs=4; needsCode=!!j.needsCode; } } }catch(e){}
-   if(!sampleFn){ const k=lsGet('ec_gemini_key'), mdl=lsGet('ec_gemini_model'); if(k&&mdl) activateGemini(k,mdl); }
+   if(!sampleFn&&GEMINI_PROXY){ if(getAccessCode()) activateProxy(); }
+   else if(!sampleFn){
+     /* Enlace personal: https://.../#key=CLAVE activa Gemini en este navegador (el fragmento # no se envía a ningún servidor). */
+     let hk=''; try{ hk=(new URLSearchParams(location.hash.slice(1)).get('key')||'').trim(); if(hk) history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+     if(hk){
+       try{ const m=await gemPickModel(hk); lsSet('ec_gemini_key',hk); lsSet('ec_gemini_model',m); setTimeout(()=>{ const s=$('#gemStatus'); if(s) s.textContent='Listo: Gemini quedó activado en este navegador con tu enlace personal.'; },0); }
+       catch(e){ const msg=aiErrGem(e); setTimeout(()=>{ const s=$('#gemStatus'); if(s) s.textContent='El enlace personal no funcionó: '+msg; },0); }
+     }
+     const k=lsGet('ec_gemini_key'), mdl=lsGet('ec_gemini_model'); if(k&&mdl) activateGemini(k,mdl);
+   }
  }
  updateCapsUI();
 }
@@ -2145,9 +2179,16 @@ document.addEventListener('input',e=>{ if(e.target&&e.target.id==='accessCode'){
 document.addEventListener('click',e=>{
  const t=e.target; if(!t||!t.id) return;
  if(t.id==='gemSave') saveGeminiKey();
+ if(t.id==='gemLink'){
+   const url=location.origin+location.pathname+'#key='+encodeURIComponent(lsGet('ec_gemini_key')); const st=$('#gemStatus');
+   const done='Enlace copiado. Guárdalo en tu gestor de contraseñas o envíatelo a ti mismo: al abrirlo en otro navegador o computador, la IA queda activa. No lo compartas, porque contiene tu clave.';
+   (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject(new Error('sin portapapeles'))).then(()=>{ st.textContent=done; }).catch(()=>{ st.innerHTML='Copia este enlace (contiene tu clave, no lo compartas): <input readonly style="width:min(520px,100%)" value="'+esc(url)+'" onfocus="this.select()">'; });
+ }
+ if(t.id==='codeSave') saveAccessCode();
+ if(t.id==='codeRemove'){ lsSet('ec_code',''); sampleFn=null; imagesOK=false; AI_NAME='Claude'; updateCapsUI(); }
  if(t.id==='gemRemove'){ lsSet('ec_gemini_key',''); lsSet('ec_gemini_model',''); sampleFn=null; imagesOK=false; AI_NAME='Claude'; updateCapsUI(); }
 });
-document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target&&e.target.id==='gemKey') saveGeminiKey(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target&&e.target.id==='gemKey') saveGeminiKey(); if(e.key==='Enter'&&e.target&&e.target.id==='codeKey') saveAccessCode(); });
 
 window.__ec={parseNum,classifyRows,aggregate,pdfLineToRow,detectMeta,state,compute,renderAll};
 loadExample(); loadExampleProj(); renderParams(); renderPolicy(); renderAll(); updateCapsUI(); initCaps();
