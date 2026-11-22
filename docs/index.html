@@ -177,6 +177,7 @@ a{color:var(--accent)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 
 <header class="top">
   <div class="wrap">
@@ -345,6 +346,7 @@ a{color:var(--accent)}
       <div class="row">
         <button id="btnXlsx" type="button">Exportar Excel</button>
         <button id="btnHtml" type="button">Exportar informe</button>
+        <button id="btnPptx" type="button" class="primary">Descargar presentación (PowerPoint)</button>
       </div>
     </div>
     <div id="results"></div>
@@ -1012,7 +1014,7 @@ function buildConditions(m){
  const li=periods.indexOf(L); const g=k=>vals[k][li]; const d=L.d;
  const lev=k=>levelOf(g(k),pol.t[k],IND.find(i=>i.k===k).hb);
  const pro=d.pro;
- if(pro&&pro.montoMax!=null&&P.monto>pro.montoMax) out.push(`Reducir el monto a un máximo de ${fm(pro.montoMax)} a ${P.plazo} meses, o ampliar el plazo, para mantener un DSCR de ${P.dscrObj.toFixed(2)}.`);
+ if(pro&&pro.montoMax!=null&&P.monto>pro.montoMax) out.push(pro.montoMax>0?`Reducir el monto a un máximo de ${fm(pro.montoMax)} a ${P.plazo} meses, o ampliar el plazo, para mantener un DSCR de ${P.dscrObj.toFixed(2)}.`:`Con el flujo actual no hay capacidad para un crédito adicional con un DSCR de ${P.dscrObj.toFixed(2)}: reducir o reestructurar la deuda existente (por ejemplo, pasar la deuda de corto plazo al largo plazo) o mejorar el flujo antes de solicitarlo.`);
  const cov=P.garantia>0?P.garantia/P.monto:0;
  if(lev('apalancamiento')!=='good'||lev('endeudamiento')!=='good'||(m.score!=null&&m.score<70)) out.push(P.garantia>0?`Garantía real con cobertura mínima de 140% del monto. La garantía ofrecida cubre ${(cov*100).toFixed(0)}%${cov<1.4?': es insuficiente':''}.`:'Garantía real (hipotecaria o prendaria) con cobertura mínima de 140% del monto, más fianza personal de los accionistas.');
  if(d.deudaFin>0&&d.f.deuda_cp/d.deudaFin>0.7) out.push('Presentar las tablas de amortización y el plan para trasladar la deuda bancaria de corto plazo a largo plazo antes del desembolso.');
@@ -1137,6 +1139,7 @@ function renderVerdict(m){
    <span class="eyebrow">Veredicto · ${esc(state.empresa||'Empresa')} · corte ${fecL(m.L.fecha)}</span>
    <div class="decision d-${m.decision}">${DEC_TXT[m.decision]}</div>
    <p class="small">${sub} Crédito evaluado: ${fm(state.params.monto)} a ${state.params.plazo} meses al ${state.params.tasa}%.</p>
+   <div class="row"><button id="btnPptxTop" type="button" class="primary">Descargar presentación (PowerPoint)</button></div>
    ${reasons.length?`<ul class="reasons small">${reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`:''}
   </div>
   <div class="kpis">
@@ -1911,6 +1914,188 @@ function exportXlsx(){
  const out=XLSX.write(wb,{type:'array',bookType:'xlsx'});
  saveFile(`Evaluacion_${safeName(state.empresa)}_${m.L.fecha}.xlsx`,new Blob([out]));
 }
+/* ---------- Presentación PowerPoint (se genera en el navegador con los números calculados) ---------- */
+function exportPptx(){
+ const m=lastModel, st=$('#exportStatus');
+ if(!m||!m.L){ st.textContent='Primero carga los estados financieros.'; return; }
+ if(!window.PptxGenJS){ st.textContent='No se pudo cargar el generador de PowerPoint. Revisa tu conexión y recarga la página.'; return; }
+ st.textContent='Armando la presentación…';
+ try{
+  const pptx=new PptxGenJS(); pptx.layout='LAYOUT_WIDE';
+  const empresa=state.empresa||'Empresa';
+  pptx.title='Evaluación de crédito · '+empresa;
+  const C={accent:'0D6676',ink:'13211F',muted:'586B68',line:'D5DFDF',soft:'EAF0F0',good:'1D7A4C',warn:'9A6200',bad:'AE3826'}, FONT='Calibri';
+  const ps=m.periods, L=m.L, d=L.d, P=m.P, li=ps.indexOf(L), g=k=>m.vals[k][li], pro=d.pro;
+  const favor=m.decision==='APROBAR'||m.decision==='CONDICIONAL';
+  const decCol=m.decision==='APROBAR'?C.good:m.decision==='CONDICIONAL'?C.warn:m.decision==='RECHAZAR'?C.bad:C.accent;
+  const lvCol=lv=>lv==='good'?C.good:lv==='mid'?C.warn:lv==='bad'?C.bad:C.muted;
+  const cut=(t,n)=>{ t=String(t); return t.length>n?t.slice(0,n-1)+'…':t; };
+  const bul=(arr,fs,col)=>arr.map(t=>({text:t,options:{bullet:{indent:18},breakLine:true,fontSize:fs||15,color:col||C.ink,fontFace:FONT,paraSpaceAfter:6}}));
+  const add=(title,sub)=>{
+    const s=pptx.addSlide(); s.background={color:'FFFFFF'};
+    s.addShape(pptx.ShapeType.rect,{x:0,y:0,w:13.33,h:0.95,fill:{color:C.accent},line:{color:C.accent}});
+    s.addText(title,{x:0.5,y:0.12,w:12.3,h:0.7,fontFace:FONT,fontSize:26,bold:true,color:'FFFFFF',valign:'middle'});
+    if(sub) s.addText(sub,{x:0.5,y:1.05,w:12.3,h:0.5,fontFace:FONT,fontSize:15,color:C.muted,valign:'top'});
+    s.addText(`${empresa} · corte ${fecL(L.fecha)} · cifras en US$`,{x:0.5,y:7.05,w:9,h:0.3,fontFace:FONT,fontSize:10,color:C.muted});
+    s.slideNumber={x:12.2,y:7.05,w:0.7,h:0.3,fontFace:FONT,fontSize:10,color:C.muted,align:'right'};
+    return s;
+  };
+  const kpi=(s,x,y,w,h,val,label,col)=>{
+    s.addShape(pptx.ShapeType.rect,{x,y,w,h,fill:{color:C.soft},line:{color:C.soft}});
+    s.addText(String(val),{x:x+0.15,y:y+0.06,w:w-0.3,h:h*0.55,fontFace:FONT,fontSize:26,bold:true,color:col||C.ink,valign:'middle'});
+    s.addText(label,{x:x+0.15,y:y+h*0.62,w:w-0.3,h:h*0.34,fontFace:FONT,fontSize:12,color:C.muted,valign:'top'});
+  };
+  const tbl=(s,head,rows,o)=>{
+    const fs=o.fs||13, left=j=>j===0||(o.leftCols&&o.leftCols.includes(j));
+    const hdr=head.map((h,j)=>({text:h,options:{bold:true,color:'FFFFFF',fill:{color:C.accent},align:left(j)?'left':'right',fontFace:FONT,fontSize:fs}}));
+    const body=rows.map((r,i)=>r.map((c,j)=>{ const cell=(c&&typeof c==='object')?c:{text:String(c)};
+      return {text:cell.text,options:{color:cell.color||C.ink,bold:!!cell.bold,fill:{color:i%2?C.soft:'FFFFFF'},align:left(j)?'left':'right',fontFace:FONT,fontSize:fs}}; }));
+    s.addTable([hdr,...body],{x:o.x,y:o.y,w:o.w,colW:o.colW,rowH:o.rowH||0.38,border:{type:'solid',pt:0.5,color:C.line},valign:'middle'});
+  };
+  const chartOpts=(o)=>Object.assign({barDir:'col',barGrouping:'clustered',chartColors:[C.accent,C.good,C.warn],legendPos:'b',legendFontSize:12,showValue:true,dataLabelFontSize:10,dataLabelFormatCode:'#,##0',valAxisLabelFontSize:10,catAxisLabelFontSize:11,valAxisLabelFormatCode:'#,##0',valGridLine:{color:C.line,size:0.5}},o);
+  const rnd=v=>Math.round(v||0);
+
+  /* 1. Portada */
+  { const s=pptx.addSlide(); s.background={color:C.accent};
+    s.addText(favor?'Propuesta de crédito':'Evaluación de crédito',{x:0.8,y:1.5,w:11.7,h:0.7,fontFace:FONT,fontSize:22,bold:true,color:'CFE6EA'});
+    s.addText(empresa,{x:0.8,y:2.3,w:11.7,h:1.5,fontFace:FONT,fontSize:40,bold:true,color:'FFFFFF',valign:'top'});
+    s.addText(`Crédito solicitado: ${fm(P.monto)} a ${P.plazo} meses · tasa ${P.tasa}% anual`,{x:0.8,y:4.0,w:11.7,h:0.6,fontFace:FONT,fontSize:22,color:'FFFFFF'});
+    s.addText(`Estados financieros al ${fecL(L.fecha)}. Liquidez, endeudamiento, rentabilidad, flujo de caja y capacidad de pago.`,{x:0.8,y:4.7,w:11.7,h:0.8,fontFace:FONT,fontSize:16,color:'CFE6EA',valign:'top'});
+    s.addText(`Elaborado el ${new Date().toLocaleDateString('es-EC')} · cifras en US$`,{x:0.8,y:6.7,w:11.7,h:0.4,fontFace:FONT,fontSize:12,color:'CFE6EA'});
+  }
+
+  /* 2. Resumen ejecutivo */
+  { const s=add('Resumen ejecutivo',`${empresa} solicita ${fm(P.monto)} a ${P.plazo} meses`);
+    s.addShape(pptx.ShapeType.rect,{x:0.5,y:1.7,w:4.2,h:2.3,fill:{color:C.soft},line:{color:C.soft}});
+    s.addText(DEC_TXT[m.decision],{x:0.65,y:1.78,w:3.9,h:1.0,fontFace:FONT,fontSize:26,bold:true,color:decCol,valign:'middle'});
+    s.addText(m.score==null?'—':`${m.score}/100`,{x:0.65,y:2.78,w:3.9,h:0.7,fontFace:FONT,fontSize:34,bold:true,color:C.ink});
+    s.addText('puntaje de riesgo del modelo',{x:0.65,y:3.45,w:3.9,h:0.4,fontFace:FONT,fontSize:13,color:C.muted});
+    const k4=m.projR?[fmt('x',m.projR.dscrMin),'DSCR mínimo del flujo proyectado']:(m.lastFlow?[fm(m.lastFlow.fco),'Flujo operativo del último año']:[fm(d.flujoDisp),'Flujo disponible estimado']);
+    kpi(s,5.0,1.7,3.8,1.1,fmt('x',g('dscr_pro')),'DSCR con el nuevo crédito');
+    kpi(s,9.0,1.7,3.8,1.1,pro&&pro.montoMax!=null?fm(pro.montoMax):'—','Monto máximo sostenible');
+    kpi(s,5.0,2.9,3.8,1.1,fmt('x',g('deuda_ebitda')),'Deuda neta / EBITDA');
+    kpi(s,9.0,2.9,3.8,1.1,k4[0],k4[1]);
+    const sub=m.decision==='APROBAR'?'Los indicadores y el flujo respaldan el crédito solicitado.':m.decision==='CONDICIONAL'?'El crédito es viable con garantías y condiciones.':m.decision==='RECHAZAR'?'El riesgo supera la capacidad de pago o la solidez de la empresa con las condiciones actuales.':'Hay que completar o corregir la información antes de decidir.';
+    s.addText(bul([sub,...[...m.ko,...m.why].map(x=>cut(x,170))],16),{x:0.5,y:4.25,w:12.3,h:2.7,valign:'top'});
+  }
+
+  /* 3. El crédito solicitado */
+  { const s=add('El crédito solicitado','Condiciones evaluadas');
+    const rows=[['Monto solicitado',fm(P.monto)],['Plazo',`${P.plazo} meses`],['Tasa nominal anual',`${P.tasa}%`],['Sistema de amortización',`${SIS[P.sistema]}, pago ${FREQ[P.frecuencia]}${P.gracia?`, ${P.gracia} meses de gracia`:''}`],['Primera cuota',pro?fm(pro.cuota):'—'],['Pagos del crédito en los primeros 12 meses',pro?fm(pro.anual):'—'],['Garantía ofrecida',P.garantia>0?`${fm(P.garantia)} (${(P.garantia/P.monto*100).toFixed(0)}% del monto)`:'No indicada'],['Destino',P.refinancia?'Refinanciar deuda de corto plazo':'Capital nuevo (inversión o capital de trabajo)']];
+    tbl(s,['Condición','Detalle'],rows,{x:0.5,y:1.7,w:7.8,colW:[3.6,4.2],fs:14,rowH:0.5,leftCols:[1]});
+    s.addText('Estructura de deuda hoy',{x:8.7,y:1.7,w:4.1,h:0.4,fontFace:FONT,fontSize:16,bold:true,color:C.accent});
+    s.addText(bul([`Deuda financiera: ${fm(d.deudaFin)}`,`Corto plazo: ${fm(L.f.deuda_cp)} · largo plazo: ${fm(L.f.deuda_lp)}`,`Patrimonio: ${fm(d.PAT)}`,`Deuda financiera / patrimonio: ${d.PAT>0?(d.deudaFin/d.PAT).toFixed(2)+'x':'—'}`,`Gastos financieros anuales: ${fm(d.GF_A)}`],14),{x:8.7,y:2.15,w:4.1,h:3.6,valign:'top'});
+  }
+
+  /* 4. Situación financiera */
+  { const s=add('Situación financiera','Estados estandarizados por periodo');
+    const val=(p,fn)=>p.hasBal||p.hasPL?fm(fn(p)):'—';
+    const rows=[['Ventas',...ps.map(p=>p.hasPL?fm(p.f.ventas):'—')],['EBITDA',...ps.map(p=>p.hasPL?fm(p.d.EBITDA):'—')],['Utilidad neta registrada',...ps.map(p=>p.hasPL?fm(p.d.UNreg):'—')],['Total activo',...ps.map(p=>p.hasBal?fm(p.d.AT):'—')],['Total pasivo',...ps.map(p=>p.hasBal?fm(p.d.PT):'—')],['Patrimonio',...ps.map(p=>p.hasBal?fm(p.d.PAT):'—')],['Deuda financiera',...ps.map(p=>p.hasBal?fm(p.d.deudaFin):'—')],['Efectivo',...ps.map(p=>p.hasBal?fm(p.f.efectivo):'—')]];
+    const pw=(12.3-4.3)/ps.length;
+    tbl(s,['Concepto',...ps.map(p=>fecL(p.fecha))],rows,{x:0.5,y:1.7,w:12.3,colW:[4.3,...ps.map(()=>pw)],fs:14,rowH:0.44});
+    const t=[]; if(g('margen_ebitda')!=null) t.push(`Margen EBITDA ${pc(g('margen_ebitda'))}`); if(g('margen_neto')!=null) t.push(`margen neto ${pc(g('margen_neto'))}`); if(g('roe')!=null) t.push(`ROE ${pc(g('roe'))}`);
+    if(t.length) s.addText(t.join(' · ')+' en el último periodo.',{x:0.5,y:5.9,w:12.3,h:0.5,fontFace:FONT,fontSize:15,color:C.muted});
+    if(d.impEst) s.addText('Participación de trabajadores e impuesto a la renta estimados: no estaban registrados en el estado de resultados.',{x:0.5,y:6.4,w:12.3,h:0.5,fontFace:FONT,fontSize:12,color:C.warn});
+  }
+
+  /* 5. Indicadores */
+  { const s=add('Indicadores financieros','Valor por periodo y evaluación del último periodo');
+    const keys=['razon_corriente','prueba_acida','endeudamiento','apalancamiento','deuda_ebitda','margen_ebitda','margen_neto','roe','dias_cartera','cobertura_int','dscr','dscr_pro'];
+    const rows=keys.map(k=>{ const ind=IND.find(i=>i.k===k); const lv=ind.info?null:levelOf(g(k),m.pol.t[k],ind.hb);
+      return [ind.l,...ps.map((p,j)=>m.vals[k][j]==null?'—':fmt(ind.u,m.vals[k][j])),{text:lv?LVTXT[lv]:(g(k)!=null?'Referencia':'—'),color:lvCol(lv),bold:true}]; });
+    const pw=(12.3-4.9-1.9)/ps.length;
+    tbl(s,['Indicador',...ps.map(p=>fecL(p.fecha)),'Evaluación'],rows,{x:0.5,y:1.65,w:12.3,colW:[4.9,...ps.map(()=>pw),1.9],fs:12,rowH:0.38});
+  }
+
+  /* 6. Flujo de caja */
+  { const s=add('Flujo de caja',m.flows.length?'Método indirecto, a partir de la variación entre balances':'Estimación con el estado de resultados (se necesita un segundo balance para el flujo completo)');
+    let data, txt;
+    if(m.flows.length){
+      data=[{name:'Flujo operativo',labels:m.flows.map(f=>fecL(f.to)),values:m.flows.map(f=>rnd(f.fco))},{name:'Flujo libre',labels:m.flows.map(f=>fecL(f.to)),values:m.flows.map(f=>rnd(f.fcl))},{name:'Financiamiento',labels:m.flows.map(f=>fecL(f.to)),values:m.flows.map(f=>rnd(f.fcf))}];
+      txt=flowComment(m.flows[m.flows.length-1],d);
+    } else {
+      data=[{name:'US$ anuales',labels:['EBITDA','Flujo disponible','Servicio de la deuda actual'],values:[rnd(d.EBITDA_A),rnd(d.flujoDisp),rnd(d.servicio)]}];
+      txt=`El flujo disponible (EBITDA menos impuestos) es de ${fm(d.flujoDisp)} al año. El servicio de la deuda actual, con los supuestos del análisis, es de ${fm(d.servicio)}.`;
+    }
+    s.addChart(pptx.charts.BAR,data,chartOpts({x:0.5,y:1.7,w:7.8,h:5.1,showLegend:data.length>1,chartColors:data.length>1?[C.accent,C.good,C.warn]:[C.accent]}));
+    s.addText(txt,{x:8.6,y:1.8,w:4.2,h:4.8,fontFace:FONT,fontSize:15,color:C.ink,valign:'top'});
+  }
+
+  /* 7. Capacidad de pago */
+  { const s=add('Capacidad de pago','Flujo disponible frente al servicio de la deuda en los próximos 12 meses');
+    if(L.hasPL&&pro){
+      const rows=[['Flujo disponible anual (EBITDA − impuestos)',fm(d.flujoDisp)],['Intereses de la deuda actual',fm(d.GF_A)],['Capital de la deuda actual a pagar en 12 meses',fm(d.principal)]];
+      if(P.refinancia) rows.push(['(−) Deuda de corto plazo refinanciada con este crédito',fm(-pro.relief)]);
+      rows.push(['Pagos del crédito solicitado en 12 meses',fm(pro.anual)],[{text:'Servicio total de la deuda',bold:true},{text:fm(pro.serv),bold:true}],[{text:'DSCR con el crédito solicitado',bold:true},{text:fmt('x',pro.dscrPro),bold:true,color:lvCol(levelOf(pro.dscrPro,m.pol.t.dscr_pro,true))}]);
+      tbl(s,['Concepto','US$'],rows,{x:0.5,y:1.7,w:7.8,colW:[5.6,2.2],fs:14,rowH:0.52});
+      kpi(s,8.7,1.7,4.1,1.2,pro.montoMax!=null?fm(pro.montoMax):'—',`Monto máximo sostenible a ${P.plazo} meses (DSCR ${P.dscrObj})`);
+      let t=capacityComment(d,pro,P); if(d.f.deuda_cp>0&&d.dscrRenov!=null&&P.pctCP>0) t+=` Si los bancos renuevan la deuda de corto plazo, el DSCR sería ${fmt('x',d.dscrRenov)}.`;
+      s.addText(t,{x:8.7,y:3.1,w:4.1,h:3.7,fontFace:FONT,fontSize:14,color:C.ink,valign:'top'});
+    } else s.addText('Falta el estado de resultados del último periodo para medir la capacidad de pago.',{x:0.5,y:1.8,w:12.3,h:1,fontFace:FONT,fontSize:18,color:C.warn});
+  }
+
+  /* 8. Flujo proyectado de la empresa */
+  if(m.projR){ const R=m.projR, Y=R.years;
+    const s=add('Flujo proyectado por la empresa','¿Puede pagar según su propia proyección?');
+    s.addChart(pptx.charts.BAR,[{name:'Flujo operativo',labels:Y.map(y=>yearLabel(R,y)),values:Y.map(y=>rnd(y.op))},{name:'Servicio de la deuda',labels:Y.map(y=>yearLabel(R,y)),values:Y.map(y=>rnd(y.serv))}],chartOpts({x:0.5,y:1.7,w:7.6,h:5.1,showLegend:true,chartColors:[C.accent,C.warn]}));
+    const f=projFindings(R,P,ppEff(),L).map(x=>cut(x[1],200)).slice(0,4);
+    s.addText([{text:`DSCR mínimo ${fmt('x',R.dscrMin)} · con ingresos −${ppEff().estres}%: ${fmt('x',R.dscrMinS)}`,options:{bold:true,breakLine:true,fontSize:15,color:C.accent,fontFace:FONT,paraSpaceAfter:8}},...bul(f,13)],{x:8.4,y:1.8,w:4.4,h:5.0,valign:'top'});
+  }
+
+  /* 9. Valor para los socios */
+  if(m.val&&!m.val.err){ const v=m.val;
+    const s=add('¿Conviene a los socios endeudarse?','Costo de capital (CAPM y WACC) frente al rendimiento del negocio');
+    kpi(s,0.5,1.7,3.0,1.2,`${pc(v.W0)} → ${pc(v.W1)}`,'WACC hoy → con el crédito');
+    kpi(s,3.7,1.7,3.0,1.2,`${pc(v.ROIC0)} → ${pc(v.ROIC1)}`,'ROIC hoy → con el crédito');
+    kpi(s,6.9,1.7,3.0,1.2,`${fm(v.EVA0)} → ${fm(v.EVA1)}`,'EVA anual (valor creado)');
+    kpi(s,10.1,1.7,2.7,1.2,`${pc(v.ROE0)} → ${pc(v.ROE1)}`,'ROE del socio');
+    s.addText(VER_TXT[v.ver]+'. '+v.resumen,{x:0.5,y:3.15,w:12.3,h:1.2,fontFace:FONT,fontSize:16,bold:true,color:v.ver==='SI'?C.good:v.ver==='CONDICIONADO'?C.warn:C.bad,valign:'top'});
+    s.addText(bul(v.notas.slice(0,4).map(x=>cut(x,230)),13),{x:0.5,y:4.4,w:12.3,h:2.5,valign:'top'});
+  }
+
+  /* 10. Razones a favor y riesgos */
+  { const s=add(favor?'Por qué otorgar el crédito':'Fortalezas y riesgos',favor?'Razones que respaldan la decisión, con los números del análisis':'Lo que respalda a la empresa y lo que preocupa');
+    const scored=IND.filter(i=>!i.info&&g(i.k)!=null).map(i=>({i,lv:levelOf(g(i.k),m.pol.t[i.k],i.hb)}));
+    const pros=scored.filter(x=>x.lv==='good').map(x=>`${x.i.l}: ${fmt(x.i.u,g(x.i.k))}`);
+    if(m.lastFlow&&m.lastFlow.fco>0) pros.push(`Flujo operativo positivo de ${fm(m.lastFlow.fco)} en el último año`);
+    if(pro&&pro.dscrPro!=null&&pro.dscrPro>=P.dscrObj) pros.push(`El flujo cubre ${fmt('x',pro.dscrPro)} veces la deuda, incluido el nuevo crédito`);
+    if(m.projR&&m.projR.dscrMin!=null&&m.projR.dscrMin>=1.2) pros.push(`Su propia proyección cubre la deuda todos los años (DSCR mínimo ${fmt('x',m.projR.dscrMin)})`);
+    if(m.val&&!m.val.err&&m.val.ver==='SI') pros.push('El crédito crea valor para los socios (el EVA mejora)');
+    const cons=scored.filter(x=>x.lv==='bad'||x.lv==='mid').sort((a,b)=>(a.lv==='bad'?0:1)-(b.lv==='bad'?0:1)).map(x=>`${x.i.l}: ${fmt(x.i.u,g(x.i.k))} (${LVTXT[x.lv].toLowerCase()})`);
+    m.alerts.filter(a=>a[0]==='bad'||a[0]==='warn').forEach(a=>cons.push(cut(a[1],120)));
+    s.addShape(pptx.ShapeType.rect,{x:0.5,y:1.7,w:6.0,h:0.45,fill:{color:C.good},line:{color:C.good}});
+    s.addText(favor?'A favor':'Fortalezas',{x:0.6,y:1.7,w:5.8,h:0.45,fontFace:FONT,fontSize:16,bold:true,color:'FFFFFF',valign:'middle'});
+    s.addText(bul(pros.length?pros.slice(0,6):['No se identificaron indicadores sólidos con los datos cargados.'],13),{x:0.5,y:2.3,w:6.0,h:4.6,valign:'top'});
+    s.addShape(pptx.ShapeType.rect,{x:6.8,y:1.7,w:6.0,h:0.45,fill:{color:C.warn},line:{color:C.warn}});
+    s.addText('Riesgos a cubrir',{x:6.9,y:1.7,w:5.8,h:0.45,fontFace:FONT,fontSize:16,bold:true,color:'FFFFFF',valign:'middle'});
+    s.addText(bul(cons.length?cons.slice(0,6):['No se identificaron riesgos relevantes.'],13),{x:6.8,y:2.3,w:6.0,h:4.6,valign:'top'});
+  }
+
+  /* 11. Recomendación */
+  { const titles={APROBAR:'Recomendación: otorgar el crédito',CONDICIONAL:'Recomendación: otorgar con condiciones',RECHAZAR:'Recomendación: no otorgar con las condiciones actuales',REVISAR:'Información pendiente antes de decidir'};
+    const s=add(titles[m.decision]||'Recomendación',m.decision==='RECHAZAR'?'Qué tendría que cambiar para reconsiderar':m.decision==='REVISAR'?'Corregir o completar antes de decidir':'Condiciones y documentos sugeridos');
+    let p;
+    if(m.decision==='APROBAR') p=`Se recomienda otorgar ${fm(P.monto)} a ${P.plazo} meses. Puntaje ${m.score}/100 y DSCR con el crédito de ${fmt('x',g('dscr_pro'))}.`;
+    else if(m.decision==='CONDICIONAL') p=`Se recomienda otorgar ${fm(P.monto)} a ${P.plazo} meses sujeto a las condiciones siguientes. Puntaje ${m.score}/100 y DSCR con el crédito de ${fmt('x',g('dscr_pro'))}.`;
+    else if(m.decision==='RECHAZAR') p='Con la información y las condiciones actuales no se recomienda otorgar el crédito. '+(m.ko[0]?m.ko[0]+' ':'')+(pro&&pro.montoMax>0?`El flujo soportaría hasta ${fm(pro.montoMax)} a ${P.plazo} meses.`:'');
+    else p='Hay información faltante o inconsistente que impide decidir.';
+    s.addText(cut(p,420),{x:0.5,y:1.75,w:12.3,h:1.1,fontFace:FONT,fontSize:17,bold:true,color:decCol,valign:'top'});
+    const items=m.decision==='REVISAR'?m.why:m.conditions;
+    s.addText(bul(items.slice(0,7).map(x=>cut(x,200)),14),{x:0.5,y:3.0,w:12.3,h:3.9,valign:'top'});
+  }
+
+  /* 12. Notas */
+  { const s=add('Notas y supuestos');
+    const notes=[`Análisis con estados financieros al ${fecL(L.fecha)}: balance general y estado de resultados de la empresa.`,`Se supone que el ${P.pctCP}% de la deuda bancaria de corto plazo vence en 12 meses y que la de largo plazo se amortiza en ${P.aniosLP} años. El DSCR exigido es ${P.dscrObj}.`];
+    if(d.impEst) notes.push('Participación de trabajadores (15%) e impuesto a la renta estimados, porque no estaban registrados.');
+    if(m.val&&!m.val.err) notes.push(`Costo de capital con datos de mercado de referencia: tasa libre de riesgo ${state.val.rf}%, prima de mercado ${state.val.erp}%, riesgo país ${state.val.crp}%, prima por tamaño ${state.val.size}%, beta desapalancada ${m.val.bu}, tasa fiscal ${state.val.tax}%.`);
+    notes.push('Esta presentación resume un análisis hecho con una herramienta de apoyo. La decisión final corresponde al comité de crédito.');
+    s.addText(bul(notes,15),{x:0.5,y:1.3,w:12.3,h:5.5,valign:'top'});
+  }
+
+  pptx.write({outputType:'blob'}).then(blob=>saveFile(`Presentacion_${safeName(state.empresa)}_${L.fecha}.pptx`,blob)).catch(e=>{ st.textContent='No se pudo generar el archivo: '+(e&&e.message?e.message:e); });
+ }catch(e){ st.textContent='No se pudo armar la presentación: '+(e&&e.message?e.message:e); console.error(e); }
+}
 function exportHtml(){
  const m=lastModel; if(!m||!m.L) return;
  const css=`body{font-family:Inter,Segoe UI,Arial,sans-serif;color:#13211F;max-width:960px;margin:32px auto;padding:0 20px;font-size:13px;line-height:1.5}h1,h2,h3{font-family:Archivo,Segoe UI,Arial,sans-serif}h1{font-size:22px;margin:0}h2{font-size:16px;margin:26px 0 8px;border-bottom:2px solid #0D6676;padding-bottom:4px}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{border-bottom:1px solid #D5DFDF;padding:5px 7px;text-align:left;vertical-align:top}th{background:#EAF0F0;font-size:11px;text-transform:uppercase}td.r{text-align:right}.dec{font-size:24px;font-weight:800}.good{color:#1D7A4C}.mid{color:#9A6200}.bad{color:#AE3826}.tot td{font-weight:700}@media print{h2{break-after:avoid}tr{break-inside:avoid}}`;
@@ -1958,6 +2143,7 @@ $('#btnClear').addEventListener('click',()=>{ state.docs=[]; state.overrides={};
 $('#btnTemplate').addEventListener('click',exportTemplate);
 $('#btnXlsx').addEventListener('click',exportXlsx);
 $('#btnHtml').addEventListener('click',exportHtml);
+$('#btnPptx').addEventListener('click',exportPptx);
 $('#btnMemo').addEventListener('click',writeMemo);
 $('#btnMemoStop').addEventListener('click',()=>{ if(memoCtl) memoCtl.abort(); });
 $('#empresa').addEventListener('input',e=>{ state.empresa=e.target.value; renderVerdict(lastModel||compute()); });
@@ -2178,6 +2364,7 @@ async function initCaps(){
 document.addEventListener('input',e=>{ if(e.target&&e.target.id==='accessCode'){ try{ localStorage.setItem('ec_code',e.target.value); }catch(err){} } });
 document.addEventListener('click',e=>{
  const t=e.target; if(!t||!t.id) return;
+ if(t.id==='btnPptxTop') exportPptx();
  if(t.id==='gemSave') saveGeminiKey();
  if(t.id==='gemLink'){
    const url=location.origin+location.pathname+'#key='+encodeURIComponent(lsGet('ec_gemini_key')); const st=$('#gemStatus');

@@ -3,6 +3,11 @@
 Evaluación de crédito empresarial (NIIF, US$, Ecuador): indicadores comentados, flujo de caja,
 flujo proyectado, capacidad de pago, CAPM, WACC y dictamen.
 
+Desde el veredicto (arriba) o el Paso 5 se descarga una **presentación de PowerPoint** de 12
+diapositivas con los números reales del análisis. Si el modelo recomienda el crédito, se arma como
+propuesta ("Por qué otorgar el crédito"); si no lo recomienda, como evaluación con lo que tendría
+que cambiar. No inventa argumentos que los números no respalden.
+
 ## Versión gratuita (recomendada para empezar)
 
 Todo el análisis corre en el navegador de cada usuario: no hay servidor, no hay base de datos y
